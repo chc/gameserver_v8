@@ -60,6 +60,10 @@ enum PacketEnumeration
 	ID_BULLET_SYNC = 206,
 };
 
+enum ESAMPConnectionState {
+	ESAMPConnectionState_PreInit,
+	ESAMPConnectionState_WaitInitChallenge,
+};
 
 class SAMPRakPeer : public RakNet::RakPeer {
 public:
@@ -67,6 +71,7 @@ public:
 	void handle_packet(char *data, int len, struct sockaddr_in *address_info);
 private:
 	SAMPDriver *mp_driver;
+	ESAMPConnectionState m_state;
 	
 };
 #endif //_SAMPRAKPEER_H

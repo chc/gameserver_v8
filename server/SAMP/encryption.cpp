@@ -1,4 +1,6 @@
 #include "encryption.h"
+#include <stdio.h>
+#include <memory.h>
 const uint8_t sampEncrTable[256] =
 {
 	0x27, 0x69, 0xFD, 0x87, 0x60, 0x7D, 0x83, 0x02, 0xF2, 0x3F, 0x71, 0x99, 0xA3, 0x7C, 0x1B, 0x9D,
@@ -40,17 +42,23 @@ const uint8_t sampDecrTable[256] =
 };
 
 
+uint8_t sampEncTmpBuff[4096];
+
+
 void sampEncrypt(uint8_t *buf, int len, int port, int unk)
 {
-    uint8_t bChecksum = 0;
+	memcpy(&sampEncTmpBuff[1], buf, len);
+
+    unsigned char bChecksum = 0;
     for(int i = 0; i < len; i++)
     {
-        uint8_t bData = buf[i];
+        unsigned char bData = buf[i];
         bChecksum ^= bData & 0xAA;
     }
-    buf[0] = bChecksum;
+    sampEncTmpBuff[0] = bChecksum;
 
-    uint8_t *buf_nocrc = &buf[1];
+    unsigned char *buf_nocrc = &sampEncTmpBuff[1];
+    memcpy(buf_nocrc, buf, len);
 
     for(int i = 0; i < len; i++)
     {
@@ -59,39 +67,44 @@ void sampEncrypt(uint8_t *buf, int len, int port, int unk)
 			buf_nocrc[i] ^= (uint8_t)(port ^ 0xCC);
 		unk ^= 1u;
     }
+    memcpy(buf, &sampEncTmpBuff, len+1);
 }
 
 void sampDecrypt(uint8_t *buf, int len, int port, int unk)
 {
-	uint8_t bChecksumEncr = buf[0];
+	unsigned char bChecksumEncr = buf[0];
 
 	len--;
+	memcpy(&sampEncTmpBuff, (char *)(buf + 1), len);
 
-	uint8_t bPort = port ^ 0xCC;
-	for(int i = 1; i < len; i++)
+	unsigned char bPort = port ^ 0xCC;
+	for(int i = 0; i < len; i++)
 	{
 		if(!unk)
 		{
-			buf[i] = unk ^ buf[i];
+			sampEncTmpBuff[i] = unk ^ sampEncTmpBuff[i];
 			unk++;
 			
 		}
 		else
 		{
-			buf[i] = bPort ^ buf[i];
+			sampEncTmpBuff[i] = bPort ^ sampEncTmpBuff[i];
 			unk--;
 		}
 
-		buf[i] = sampDecrTable[buf[i]];
+		sampEncTmpBuff[i] = sampDecrTable[sampEncTmpBuff[i]];
 	}
 
-	uint8_t bChecksum = 0;
+	unsigned char bChecksum = 0;
 	for(int i = 0; i < len; i++)
 	{
-		uint8_t bData = buf[i];
+		unsigned char bData = sampEncTmpBuff[i];
         bChecksum ^= (bData & 0xAA);
 	}
+
+	memcpy(buf, &sampEncTmpBuff, len);
 	
-	//if(bChecksum != bChecksumEncr)
-	//	Log("[WARNING] Invalid checksum: bChecksum %d != bChecksumEncr %d", bChecksum, bChecksumEncr);
+	if(bChecksum != bChecksumEncr) {
+		printf("Checksum mismatch: %d != %d\n", bChecksum, bChecksumEncr);
+	}
 }
