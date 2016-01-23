@@ -37,6 +37,7 @@ public:
 	void tick();
 	int getListenerSocket();
 	uint16_t getPort();
+	uint32_t getBindIP();
 private:
 
 	//samp query stuff
@@ -50,6 +51,7 @@ private:
 	uint16_t m_port;
 	int m_sd;
 	SAMPRakPeer *mp_samprak;
+	struct sockaddr_in m_local_addr;
 
 };
 #endif //_SAMPDRIVER_H

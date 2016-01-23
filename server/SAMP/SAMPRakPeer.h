@@ -1,8 +1,9 @@
 #ifndef _SAMPRAKPEER_H
 #define _SAMPRAKPEER_H
-#include <RakPeerInterface.h>
-#include <RakPeer.h>
-
+#include <main.h>
+#include <RakNet/BitStream.h>
+#include <RakNet/DS_RangeList.h>
+#include <RakNet/StringCompressor.h>
 class SAMPDriver;
 
 enum PacketEnumeration
@@ -60,18 +61,57 @@ enum PacketEnumeration
 	ID_BULLET_SYNC = 206,
 };
 
-enum ESAMPConnectionState {
-	ESAMPConnectionState_PreInit,
-	ESAMPConnectionState_WaitInitChallenge,
+/// These enumerations are used to describe when packets are delivered.
+enum PacketPriority
+{
+	SYSTEM_PRIORITY,   /// \internal Used by RakNet to send above-high priority messages.
+	HIGH_PRIORITY,   /// High priority messages are send before medium priority messages.
+	MEDIUM_PRIORITY,   /// Medium priority messages are send before low priority messages.
+	LOW_PRIORITY,   /// Low priority messages are only sent when no other messages are waiting.
+	NUMBER_OF_PRIORITIES
 };
 
-class SAMPRakPeer : public RakNet::RakPeer {
+/// These enumerations are used to describe how packets are delivered.
+/// \note  Note to self: I write this with 3 bits in the stream.  If I add more remember to change that
+enum PacketReliability
+{
+	UNRELIABLE = 6,   /// Same as regular UDP, except that it will also discard duplicate datagrams.  RakNet adds (6 to 17) + 21 bits of overhead, 16 of which is used to detect duplicate packets and 6 to 17 of which is used for message length.
+	UNRELIABLE_SEQUENCED,  /// Regular UDP with a sequence counter.  Out of order messages will be discarded.  This adds an additional 13 bits on top what is used for UNRELIABLE.
+	RELIABLE,   /// The message is sent reliably, but not necessarily in any order.  Same overhead as UNRELIABLE.
+	RELIABLE_ORDERED,   /// This message is reliable and will arrive in the order you sent it.  Messages will be delayed while waiting for out of order messages.  Same overhead as UNRELIABLE_SEQUENCED.
+	RELIABLE_SEQUENCED /// This message is reliable and will arrive in the sequence you sent it.  Out or order messages will be dropped.  Same overhead as UNRELIABLE_SEQUENCED.
+};
+
+enum ESAMPConnectionState {
+	ESAMPConnectionState_ConnectionRequest, //client has initially connected, sending response(banned, full, or pre-auth cookie)
+	ESAMPConnectionState_WaitConnectCookie,
+	ESAMPConnectionState_SAMPRak, //"SAMPRak" mode
+};
+
+#define SAMP_COOKIE_KEY 0x6969
+
+class SAMPRakPeer {
 public:
 	SAMPRakPeer(SAMPDriver *driver);
 	void handle_packet(char *data, int len, struct sockaddr_in *address_info);
 private:
+	void handle_raknet_packet(char *data, int len);
+	void process_bitstream(RakNet::BitStream *stream);
+	void set_connection_state(ESAMPConnectionState state);
+
+	void send_samp_rakauth(const char *key);
+	void send_samp_rakauth(bool success);
+
+	void send_bitstream(RakNet::BitStream *stream);
+	uint16_t m_cookie_challenge;
 	SAMPDriver *mp_driver;
 	ESAMPConnectionState m_state;
+
+	bool m_samprak_auth; //exchanged auth keys
+
+	struct sockaddr_in m_address_info;
+
+	uint16_t m_packet_sequence;
 	
 };
 #endif //_SAMPRAKPEER_H

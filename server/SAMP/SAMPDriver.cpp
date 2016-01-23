@@ -7,10 +7,7 @@
 #define SAMP_MAX_PLAYERS 5
 
 SAMPDriver::SAMPDriver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
-    struct sockaddr_in local_addr;
-	
-
-	#ifdef _WIN32
+    #ifdef _WIN32
     WSADATA wsdata;
     WSAStartup(MAKEWORD(1,0),&wsdata);
 	#endif
@@ -24,11 +21,10 @@ SAMPDriver::SAMPDriver(INetServer *server, const char *host, uint16_t port) : IN
 
 	m_port = port;
 
-    local_addr.sin_port = htons(port);
-    local_addr.sin_addr.s_addr = htonl(bind_ip);
-    local_addr.sin_family = AF_INET;
-
-	int n = bind(m_sd, (struct sockaddr *)&local_addr, sizeof local_addr);
+    m_local_addr.sin_port = htons(port);
+    m_local_addr.sin_addr.s_addr = htonl(bind_ip);
+    m_local_addr.sin_family = AF_INET;
+	int n = bind(m_sd, (struct sockaddr *)&m_local_addr, sizeof m_local_addr);
     if(n < 0) {
         //signal error
     }
@@ -49,7 +45,6 @@ void SAMPDriver::tick() {
 	SAMPHeader *header = (SAMPHeader *)&recvbuf;
 	
 	if(header->magic != SAMP_MAGIC) {
-		printf("Got raknet stuff\n");
 		mp_samprak->handle_packet((char *)&recvbuf, len, &si_other);
 		
 	} else {
@@ -219,4 +214,7 @@ int SAMPDriver::getListenerSocket() {
 
 uint16_t SAMPDriver::getPort() {
 	return m_port;
+}
+uint32_t SAMPDriver::getBindIP() {
+	return htonl(m_local_addr.sin_addr.s_addr);
 }
