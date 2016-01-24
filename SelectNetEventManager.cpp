@@ -24,6 +24,8 @@ void SelectNetEventManager::run() {
 		INetDriver *driver = *it;
 		if(FD_ISSET(driver->getListenerSocket(), &m_fdset)) {
 			driver->tick();
+		} else {
+			driver->think();
 		}
 		it++;
 	}

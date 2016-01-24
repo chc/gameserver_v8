@@ -4,6 +4,7 @@
 #include <RakNet/BitStream.h>
 #include <RakNet/DS_RangeList.h>
 #include <RakNet/StringCompressor.h>
+#include <RakNet/GetTime.h>
 class SAMPDriver;
 
 enum PacketEnumeration
@@ -88,30 +89,62 @@ enum ESAMPConnectionState {
 	ESAMPConnectionState_SAMPRak, //"SAMPRak" mode
 };
 
+class SAMPRakPeer;
+
+enum ESAMPRPC {
+	ESAMPRPC_ClientJoin = 25
+};
+typedef struct {
+	uint8_t id;
+	void (SAMPRakPeer::*handler)(RakNet::BitStream *stream);
+} RPCHandler;
+
 #define SAMP_COOKIE_KEY 0x6969
 
 class SAMPRakPeer {
 public:
 	SAMPRakPeer(SAMPDriver *driver);
 	void handle_packet(char *data, int len, struct sockaddr_in *address_info);
+	void send_ping();
+	void think(); //called when no data is recieved
 private:
 	void handle_raknet_packet(char *data, int len);
 	void process_bitstream(RakNet::BitStream *stream);
 	void set_connection_state(ESAMPConnectionState state);
 
-	void send_samp_rakauth(const char *key);
-	void send_samp_rakauth(bool success);
+	void set_static_data(const char *data, int len);
 
+	void send_samp_rakauth(const char *key);
+	void send_connection_accepted(bool success);
+
+	void send_detect_lost_connections();
+
+	void find_rpc_handler_by_id(uint8_t id);
+	void handle_incoming_rpc(RakNet::BitStream *stream);
+	void send_rpc(uint8_t rpc, RakNet::BitStream *stream);
 	void send_bitstream(RakNet::BitStream *stream);
+
 	uint16_t m_cookie_challenge;
 	SAMPDriver *mp_driver;
 	ESAMPConnectionState m_state;
 
 	bool m_samprak_auth; //exchanged auth keys
+	bool m_got_client_join;
 
 	struct sockaddr_in m_address_info;
 
 	uint16_t m_packet_sequence;
+	uint16_t m_player_id;
+
+	//RPC Handlers
+	static RPCHandler s_rpc_handler[];
+	void m_client_join_handler(RakNet::BitStream *stream);
+
+	//Misc RPC stuff
+	void send_game_init();
+	void send_player_update(); //seems to just send timestamp?? unsure of importance
+
+	void send_fake_players();
 	
 };
 #endif //_SAMPRAKPEER_H

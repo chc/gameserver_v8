@@ -9,7 +9,7 @@ public:
 		Check for incoming data, etc
 	*/
 	virtual void tick() = 0;
-
+	virtual void think() = 0;
 	virtual int getListenerSocket() = 0;
 protected:
 	INetServer *m_server;

@@ -35,6 +35,7 @@ public:
 	SAMPDriver(INetServer *server, const char *host, uint16_t port);
 	~SAMPDriver();
 	void tick();
+	void think();
 	int getListenerSocket();
 	uint16_t getPort();
 	uint32_t getBindIP();

@@ -32,7 +32,9 @@ SAMPDriver::SAMPDriver(INetServer *server, const char *host, uint16_t port) : IN
 SAMPDriver::~SAMPDriver() {
 
 }
-
+void SAMPDriver::think() {
+	mp_samprak->think();
+}
 void SAMPDriver::tick() {
 
 	char recvbuf[1024];
