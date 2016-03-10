@@ -16,7 +16,6 @@
 	#include <netdb.h>
 	#include <pthread.h>
 	#include <sys/times.h>
-	#include <stropts.h>
 
 	#endif
 	#include <memory.h>
