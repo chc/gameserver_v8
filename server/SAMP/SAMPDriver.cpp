@@ -17,8 +17,7 @@ SAMPDriver::SAMPDriver(INetServer *server, const char *host, uint16_t port) : IN
 	if((m_sd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0){
 		//signal error
     }
-	mp_samprak = new SAMPRakPeer(this);
-
+    
 	m_port = port;
 
     m_local_addr.sin_port = htons(port);
@@ -26,14 +25,48 @@ SAMPDriver::SAMPDriver(INetServer *server, const char *host, uint16_t port) : IN
     m_local_addr.sin_family = AF_INET;
 	int n = bind(m_sd, (struct sockaddr *)&m_local_addr, sizeof m_local_addr);
     if(n < 0) {
+
         //signal error
     }
+    gettimeofday(&m_server_start, NULL);
 }
 SAMPDriver::~SAMPDriver() {
 
 }
 void SAMPDriver::think() {
-	mp_samprak->think();
+	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
+	while(it != m_connections.end()) {
+		SAMPRakPeer *peer = *it;
+		peer->think();
+		it++;
+	}
+}
+SAMPRakPeer *SAMPDriver::find_client(struct sockaddr_in *address) {
+	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
+	while(it != m_connections.end()) {
+		SAMPRakPeer *peer = *it;
+		const struct sockaddr_in *peer_address = peer->getAddress();
+		if(address->sin_port == peer_address->sin_port && address->sin_addr.s_addr == peer_address->sin_addr.s_addr) {
+			return peer;
+		} 
+		it++;
+	}
+	return NULL;
+}
+SAMPRakPeer *SAMPDriver::find_or_create(struct sockaddr_in *address) {
+	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
+	while(it != m_connections.end()) {
+		SAMPRakPeer *peer = *it;
+		const struct sockaddr_in *peer_address = peer->getAddress();
+		if(address->sin_port == peer_address->sin_port && address->sin_addr.s_addr == peer_address->sin_addr.s_addr) {
+			return peer;
+		} 
+		it++;
+	}
+	SAMPRakPeer *ret = new SAMPRakPeer(this, address);
+	((CHCGameServer *)getServer())->GetScriptInterface()->HandleEvent(CHCGS_ClientConnectEvent, ret, NULL);	
+	m_connections.push_back(ret);
+	return ret;
 }
 void SAMPDriver::tick() {
 
@@ -41,14 +74,17 @@ void SAMPDriver::tick() {
 
     struct sockaddr_in si_other;
     socklen_t slen = sizeof(struct sockaddr_in);
+
 	int len = recvfrom(m_sd,(char *)&recvbuf,sizeof(recvbuf),0,(struct sockaddr *)&si_other,&slen);
 
 
 	SAMPHeader *header = (SAMPHeader *)&recvbuf;
 	
+
 	if(header->magic != SAMP_MAGIC) {
-		mp_samprak->handle_packet((char *)&recvbuf, len, &si_other);
-		
+		//, &si_other
+		SAMPRakPeer *mp_samprak = find_or_create(&si_other);
+		mp_samprak->handle_packet((char *)&recvbuf, len);
 	} else {
 		handle_server_query((char *)&recvbuf, len, &si_other);
 	}
@@ -219,4 +255,10 @@ uint16_t SAMPDriver::getPort() {
 }
 uint32_t SAMPDriver::getBindIP() {
 	return htonl(m_local_addr.sin_addr.s_addr);
+}
+uint32_t SAMPDriver::getDeltaTime() {
+	struct timeval now;
+	gettimeofday(&now, NULL);
+	uint32_t t = (now.tv_usec/1000.0) - (m_server_start.tv_usec/1000.0);
+	return t;
 }

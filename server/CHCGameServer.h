@@ -3,6 +3,19 @@
 #include <stdint.h>
 #include "NetServer.h"
 #include "ScriptInterface.h"
+enum CHCGS_Events {
+	CHCGS_ClientConnectEvent,
+	CHCGS_ClientDisconnectEvent,
+	CHCGS_EnterWorld,
+	CHCGS_ClientCommand,
+	CHCGS_DialogResponse,
+};
+typedef struct {
+	int dialog_id;
+	char button_id;
+	int list_index;
+	const char *input;
+} DialogEvent;
 class CHCGameServer : public INetServer {
 public:
 	CHCGameServer();
@@ -21,6 +34,8 @@ public:
 
 	void setMaxPlayers(uint32_t max);
 	uint32_t getMaxPlayers();
+
+	IScriptInterface *GetScriptInterface();
 private:
 	IScriptInterface *mp_script_interface;
 	char m_name[256];

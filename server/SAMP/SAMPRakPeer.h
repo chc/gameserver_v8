@@ -92,7 +92,16 @@ enum ESAMPConnectionState {
 class SAMPRakPeer;
 
 enum ESAMPRPC {
-	ESAMPRPC_ClientJoin = 25
+	ESAMPRPC_SetPlayerPos = 12,	
+	ESAMPRPC_SetPlayerHealth = 14,	
+	ESAMPRPC_ClientJoin = 25,
+	ESAMPRPC_ClientCommand = 50,
+	ESAMPRPC_DialogResponse = 62,
+	ESAMPRPC_SetPlayerArmour = 66,
+	ESAMPRPC_RequestClass = 128,
+	ESAMPRPC_RequestSpawn = 129,
+	ESAMPRPC_ServerJoin = 137,
+	ESAMPRPC_SetPlayerSkin = 153,
 };
 typedef struct {
 	uint8_t id;
@@ -103,10 +112,19 @@ typedef struct {
 
 class SAMPRakPeer {
 public:
-	SAMPRakPeer(SAMPDriver *driver);
-	void handle_packet(char *data, int len, struct sockaddr_in *address_info);
+	SAMPRakPeer(SAMPDriver *driver, struct sockaddr_in *address_info);
+	~SAMPRakPeer();
+	void handle_packet(char *data, int len);
 	void send_ping();
 	void think(); //called when no data is recieved
+	const struct sockaddr_in *getAddress() { return &m_address_info; }
+	void SendClientMessage(uint32_t colour, const char *msg);
+	void ShowPlayerDialog(int dialogid, int type, const char *title, const char *msg, const char *b1 = NULL, const char *b2 = NULL);
+	void SetHealth(float hp);
+	void SetArmour(float hp);
+	void SetSkin(int id);
+	void SpawnPlayer(float x, float y, float z, int skin = 0, int team = -1);
+	void SetPosition(float x, float y, float z);
 private:
 	void handle_raknet_packet(char *data, int len);
 	void process_bitstream(RakNet::BitStream *stream);
@@ -128,6 +146,8 @@ private:
 	SAMPDriver *mp_driver;
 	ESAMPConnectionState m_state;
 
+	DataStructures::RangeList<uint16_t> acknowlegements;
+
 	bool m_samprak_auth; //exchanged auth keys
 	bool m_got_client_join;
 
@@ -139,6 +159,8 @@ private:
 	//RPC Handlers
 	static RPCHandler s_rpc_handler[];
 	void m_client_join_handler(RakNet::BitStream *stream);
+	void m_client_command_handler(RakNet::BitStream *stream);
+	void m_client_dialogresp_handler(RakNet::BitStream *stream);
 
 	//Misc RPC stuff
 	void send_game_init();

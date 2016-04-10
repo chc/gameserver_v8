@@ -1,8 +1,8 @@
 #include "CHCGameServer.h"
 #include "ScriptInterface.h"
-#include "JSScriptInterface.h"
+#include "PythonInterface.h"
 CHCGameServer::CHCGameServer() {
-	mp_script_interface = new JSScriptInterface(this);
+	mp_script_interface = new PythonScriptInterface(this);
 }
 void CHCGameServer::init() {
 
@@ -39,4 +39,7 @@ void CHCGameServer::setMaxPlayers(uint32_t max) {
 }
 uint32_t CHCGameServer::getMaxPlayers() {
 	return m_max_players;
+}
+IScriptInterface *CHCGameServer::GetScriptInterface() {
+	return mp_script_interface;
 }

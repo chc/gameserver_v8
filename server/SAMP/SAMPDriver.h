@@ -7,6 +7,9 @@
 
 #include "SAMPRakPeer.h"
 
+#include <vector>
+#include <sys/time.h>
+
 
 #define SAMP_MAGIC 0x504d4153
 
@@ -39,6 +42,10 @@ public:
 	int getListenerSocket();
 	uint16_t getPort();
 	uint32_t getBindIP();
+	uint32_t getDeltaTime();
+
+	SAMPRakPeer *find_client(struct sockaddr_in *address);
+	SAMPRakPeer *find_or_create(struct sockaddr_in *address);
 private:
 
 	//samp query stuff
@@ -51,8 +58,10 @@ private:
 	const char *m_host;
 	uint16_t m_port;
 	int m_sd;
-	SAMPRakPeer *mp_samprak;
+	std::vector<SAMPRakPeer *> m_connections;
 	struct sockaddr_in m_local_addr;
+
+	struct timeval m_server_start;
 
 };
 #endif //_SAMPDRIVER_H

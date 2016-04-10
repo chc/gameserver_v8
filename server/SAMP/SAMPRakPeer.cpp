@@ -2,6 +2,7 @@
 #include "SAMPDriver.h"
 #include "encryption.h"
 #include <stdio.h>
+#include "../CHCGameServer.h"
 
 #pragma pack(1)
 typedef struct _PLAYER_SPAWN_INFO
@@ -16,20 +17,27 @@ typedef struct _PLAYER_SPAWN_INFO
 } PLAYER_SPAWN_INFO;
 
 RPCHandler SAMPRakPeer::s_rpc_handler[] = {
-	{ESAMPRPC_ClientJoin, &SAMPRakPeer::m_client_join_handler}
+	{ESAMPRPC_ClientJoin, &SAMPRakPeer::m_client_join_handler},
+	{ESAMPRPC_ClientCommand, &SAMPRakPeer::m_client_command_handler},
+	{ESAMPRPC_DialogResponse, &SAMPRakPeer::m_client_dialogresp_handler}
 };
 
-SAMPRakPeer::SAMPRakPeer(SAMPDriver *driver) {
+SAMPRakPeer::SAMPRakPeer(SAMPDriver *driver, struct sockaddr_in *address_info) {
 	mp_driver = driver;
 	m_state = ESAMPConnectionState_ConnectionRequest;
 	m_cookie_challenge = 0x1111;
 	m_packet_sequence = 0;
 	m_player_id = 0;
 	m_got_client_join = false;
-}
-void SAMPRakPeer::handle_packet(char *data, int len, struct sockaddr_in *address_info) {
-
 	memcpy(&m_address_info,address_info, sizeof(m_address_info));
+    StringCompressor::AddReference();
+}
+SAMPRakPeer::~SAMPRakPeer() {
+
+    StringCompressor::RemoveReference();
+}
+void SAMPRakPeer::handle_packet(char *data, int len) {
+
 	sampDecrypt((uint8_t *)data, len, mp_driver->getPort(), 0);
 
 	int sd = mp_driver->getListenerSocket();
@@ -62,16 +70,33 @@ void SAMPRakPeer::handle_raknet_packet(char *data, int len) {
 	bool hasacks;
 	uint8_t reliability = 0;
 	uint16_t seqid = 0;
-	is.ReadBits((unsigned char *)&hasacks, 1);
+	is.Read(hasacks);
 
 	if(hasacks) {
-		DataStructures::RangeList<uint16_t> acknowlegements;
-		acknowlegements.Deserialize(&is);
+		DataStructures::RangeList<uint16_t> incomingAcks;
+		incomingAcks.Deserialize(&is);
+		uint16_t messageNumber;
+		for (int i=0; i<incomingAcks.ranges.Size();i++)
+		{
+			if (incomingAcks.ranges[i].minIndex>incomingAcks.ranges[i].maxIndex)
+			{
+				break;
+			}
+
+			for (messageNumber=incomingAcks.ranges[i].minIndex; messageNumber >= incomingAcks.ranges[i].minIndex && messageNumber <= incomingAcks.ranges[i].maxIndex; messageNumber++)
+			{
+				//printf("======= ack msgid: %d\n", messageNumber);
+				acknowlegements.Insert(messageNumber);
+			}
+		}
 		//printf("**** Num acknowlegements: %d\n",acknowlegements.Size());
 	}
 	while(BITS_TO_BYTES(is.GetNumberOfUnreadBits()) > 1) {
 		is.Read(seqid);
-		printf("**** Packet %d - %d\n",seqid, BITS_TO_BYTES(is.GetNumberOfUnreadBits()));
+		if(seqid > m_packet_sequence) {
+			m_packet_sequence = seqid+1;
+		}
+		//printf("**** Packet %d - %d\n",seqid, BITS_TO_BYTES(is.GetNumberOfUnreadBits()));
 		is.ReadBits(&reliability, 4, true);
 		
 		//printf("reliability: %d\n",reliability);
@@ -80,10 +105,11 @@ void SAMPRakPeer::handle_raknet_packet(char *data, int len) {
 			uint16_t orderingIndexType;
 			is.ReadBits((unsigned char *)&orderingChannel, 5, true);
 			is.Read(orderingIndexType);
-			printf("**** reliability: %d - (chan: %d  index: %d) (%d)\n",reliability,orderingChannel, orderingIndexType, len);
+			//printf("**** reliability: %d - (chan: %d  index: %d) (%d)\n",reliability,orderingChannel, orderingIndexType, len);
 
 
 		}
+		acknowlegements.Insert(seqid);
 
 		bool is_split_packet;
 		//is.ReadBits((unsigned char *)&is_split_packet, 1);
@@ -95,7 +121,7 @@ void SAMPRakPeer::handle_raknet_packet(char *data, int len) {
 			is.Read(split_packet_id);
 			is.ReadCompressed(split_packet_index);
 			is.ReadCompressed(split_packet_count);
-			printf("**** Split: (%d) %d %d\n", split_packet_id, split_packet_index, split_packet_count);
+			//printf("**** Split: (%d) %d %d\n", split_packet_id, split_packet_index, split_packet_count);
 		}
 		//loop through all data
 		uint16_t data_len;
@@ -111,7 +137,7 @@ void SAMPRakPeer::process_bitstream(RakNet::BitStream *stream) {
 	RakNet::BitStream os(1024);
 	uint8_t msgid;
 	stream->Read(msgid);
-	printf("Rak MSGID: %d/%02x - %d\n",msgid,msgid, BITS_TO_BYTES(stream->GetNumberOfUnreadBits()));
+	//printf("Rak MSGID: %d/%02x - %d\n",msgid,msgid, BITS_TO_BYTES(stream->GetNumberOfUnreadBits()));
 	uint32_t ping_cookie;
 	uint32_t the_time = time(NULL);
 	switch(msgid) {
@@ -148,9 +174,9 @@ void SAMPRakPeer::process_bitstream(RakNet::BitStream *stream) {
 			printf("Got internal ping\n");
 			stream->Read(ping_cookie);
 
-			os.Write((uint8_t)ID_CONNECTED_PONG);
+			os.Write((uint8_t)ID_INTERNAL_PING);
 			os.Write(ping_cookie);
-			os.Write((uint32_t)time(NULL));
+			os.Write((uint32_t)RakNet::GetTime());
 			send_bitstream(&os);
 		break;
 		case ID_CONNECTED_PONG:
@@ -164,6 +190,10 @@ void SAMPRakPeer::process_bitstream(RakNet::BitStream *stream) {
 		case ID_RPC:
 			handle_incoming_rpc(stream);
 		break;
+		case ID_RECEIVED_STATIC_DATA:
+			set_static_data(NULL, 0);
+			send_detect_lost_connections();
+		break;
 		case ID_NEW_INCOMING_CONNECTION:
 		//printf("New connection");
 		break;
@@ -172,6 +202,7 @@ void SAMPRakPeer::process_bitstream(RakNet::BitStream *stream) {
 void SAMPRakPeer::find_rpc_handler_by_id(uint8_t id) {
 
 }
+
 void SAMPRakPeer::handle_incoming_rpc(RakNet::BitStream *stream) {
 	uint8_t rpcid;
 	uint32_t bits = 0;
@@ -187,7 +218,8 @@ void SAMPRakPeer::handle_incoming_rpc(RakNet::BitStream *stream) {
 
 	for(int i=0;i<sizeof(s_rpc_handler)/sizeof(RPCHandler);i++) {
 		if(s_rpc_handler[i].id == rpcid) {
-			(this->*s_rpc_handler[i].handler)(&bs);
+			printf("Jumping to: %p\n", s_rpc_handler[i].handler);
+			(*this.*s_rpc_handler[i].handler)(&bs);
 		}
 	}
 	
@@ -229,10 +261,19 @@ void SAMPRakPeer::send_samp_rakauth(const char *key) {
 	bs.Write((char)0);
 	send_bitstream(&bs);
 }
+#define UDP_HEADER_SIZE 28
+#define MTUSize 1092
 void SAMPRakPeer::send_bitstream(RakNet::BitStream *stream) {
 	PacketReliability reliability = RELIABLE;
 	RakNet::BitStream os;
-	os.Write(false); //has no acks
+	if( acknowlegements.Size() > 0) {
+		os.Write(true); //has no acks
+		acknowlegements.Serialize(&os, (MTUSize-UDP_HEADER_SIZE)*8-1, true);
+		acknowlegements.Clear();
+
+	} else {
+		os.Write(false); //has no acks
+	}
 	os.Write(m_packet_sequence++);
 	os.WriteBits((unsigned char *)&reliability, 4, true);
 	os.Write(false); //is split packet
@@ -249,7 +290,40 @@ void SAMPRakPeer::send_bitstream(RakNet::BitStream *stream) {
 }
 
 
+void SAMPRakPeer::m_client_command_handler(RakNet::BitStream *stream) {
+	uint32_t cmdlen;
+	uint8_t cmd[256];
+	stream->Read(cmdlen);
+	memset(&cmd,0,sizeof(cmd));
+	stream->Read((char *)&cmd, cmdlen);
+	printf("Cmd: %s\n",cmd);
+	CHCGameServer *server = (CHCGameServer *)mp_driver->getServer();
+	server->GetScriptInterface()->HandleEvent(CHCGS_ClientCommand, this, cmd);
+}
+void SAMPRakPeer::m_client_dialogresp_handler(RakNet::BitStream *stream) {
+	uint16_t dialogid;
+	uint8_t buttonid;
+	uint16_t list_idx;
+	char resp[128+1];
+	uint8_t resplen;
+	memset(&resp,0,sizeof(resp));
 
+	
+	stream->Read(dialogid);
+	stream->Read(buttonid);
+	stream->Read(list_idx);
+	stream->Read(resplen);
+	stream->Read(resp,resplen);
+
+	DialogEvent event;
+	event.input = (const char *)&resp;
+	event.dialog_id = dialogid;
+	event.button_id = buttonid;
+	event.list_index = list_idx;
+
+	CHCGameServer *server = (CHCGameServer *)mp_driver->getServer();
+	server->GetScriptInterface()->HandleEvent(CHCGS_DialogResponse, this, (void *)&event);
+}
 
 void SAMPRakPeer::m_client_join_handler(RakNet::BitStream *stream) {
 	uint32_t netver;
@@ -260,7 +334,7 @@ void SAMPRakPeer::m_client_join_handler(RakNet::BitStream *stream) {
 	char auth[4*16];
 	uint8_t auth_len;
 	memset(&auth,0,sizeof(auth));
-	memset(&version,0,sizeof(auth));
+	memset(&version,0,sizeof(version));
 	memset(&name,0,sizeof(name));
 	uint8_t namelen;
 	uint8_t verlen;
@@ -277,14 +351,15 @@ void SAMPRakPeer::m_client_join_handler(RakNet::BitStream *stream) {
 	stream->Read(verlen);
 	stream->Read(version, verlen);
 
-	//printf("Name: %s\nGPCI: %s\nVersion: %s\n",name,auth,version);
+	printf("Name: %s\nGPCI: %s\nVersion: %s\n",name,auth,version);
 
+	if(!m_got_client_join) {
+
+		send_player_update();
+		send_game_init();
+		//send_fake_players();
+	}
 	m_got_client_join = true;
-	char b = 0;
-	//set_static_data(NULL, 0);
-	send_player_update();
-	send_game_init();
-	
 }
 void SAMPRakPeer::send_detect_lost_connections() {
 	RakNet::BitStream bs;
@@ -304,65 +379,136 @@ void SAMPRakPeer::think() {
 		//send_ping();
 }
 void SAMPRakPeer::send_ping() {
-	
+	return;
 	static int last_ping = 0;
 
 	if(time(NULL)-last_ping > 2) {
 		int atime = time(NULL);
 		
 		RakNet::BitStream bs;
-		bs.Write((uint8_t)ID_INTERNAL_PING);
+		bs.Write((uint8_t)ID_PING);
 		bs.Write(atime);
 		send_bitstream(&bs);
-		printf("Sending ping : %d\n", atime);
-		last_ping = time(NULL);
+		last_ping = atime;
 	}	
 }
-void SAMPRakPeer::send_fake_players() {
-	printf("Send fake players\n");
-
+void SAMPRakPeer::SendClientMessage(uint32_t colour, const char *msg) {
 	RakNet::BitStream bsData;
+	bsData.Reset();
+	bsData.Write(colour);
+	uint32_t len = strlen(msg);
+	bsData.Write(len);
+	bsData.Write(msg,len);
+	send_rpc(93, &bsData);
+	
+}
+void SAMPRakPeer::send_fake_players() {
+	RakNet::BitStream bsData;
+
 	PLAYER_SPAWN_INFO psInfo;
 	memset(&psInfo, 0, sizeof(psInfo));
 	psInfo.byteTeam = 0xFF;
 	psInfo.iSkin = 33;
-	psInfo.vecPos[0] = 389.8672f;
-	psInfo.vecPos[1] = 2543.0046f;
-	psInfo.vecPos[2] = 16.5391f;
+	//1529.6,-1691.2,13.3
+	psInfo.vecPos[0] = 1529.6f;
+	psInfo.vecPos[1] = -1691.2f;
+	psInfo.vecPos[2] = 13.3f;
 	psInfo.fRotation = 90.0f;
 	psInfo.iSpawnWeapons[0] = 38;
 	psInfo.iSpawnWeaponsAmmo[0] = 69;
 
 	bsData.Write((uint8_t)1);
 	bsData.Write((char *)&psInfo, sizeof(psInfo));
-	send_rpc(128, &bsData);
+	send_rpc(ESAMPRPC_RequestClass, &bsData);
 
 	bsData.Reset();
 	
 	bsData.Write((uint32_t)2);
-	send_rpc(129, &bsData);
+	send_rpc(ESAMPRPC_RequestSpawn, &bsData);
 	
-	bsData.Reset();
-	bsData.Write(0xFF00FFFF);
-	const char *str = "Hello there";
-	uint32_t len = strlen(str);
-	bsData.Write(len);
-	bsData.Write(str,len);
-	send_rpc(93, &bsData);
 	
-	/*
 	char name[24];
 	for(uint16_t i=0;i<1000;i++) {
 		RakNet::BitStream bs;
-		sprintf(name,"Player_%d",i);
+		sprintf(name,"user_%d",i);
 		bs.Write(i);
 		bs.Write((uint32_t)0); //colour, 0 = client chooses
 		bs.Write((uint8_t)0); //isNPC
 		bs.Write((uint8_t)strlen(name));
 		bs.Write(name, strlen(name));
-		send_rpc(137, &bs);
+		send_rpc(ESAMPRPC_ServerJoin, &bs);
 	}
-	*/
+	
+}
+void SAMPRakPeer::SpawnPlayer(float x, float y, float z, int skin, int team) {
+	RakNet::BitStream bsData;
+
+	PLAYER_SPAWN_INFO psInfo;
+	memset(&psInfo, 0, sizeof(psInfo));
+	psInfo.byteTeam = team;
+	psInfo.iSkin = skin;
+	psInfo.vecPos[0] = x;
+	psInfo.vecPos[1] = y;
+	psInfo.vecPos[2] = z;
+
+	bsData.Write((uint8_t)1); //maybe the id or something
+	bsData.Write((char *)&psInfo, sizeof(psInfo));
+	send_rpc(ESAMPRPC_RequestClass, &bsData);
+
+	bsData.Reset();
+		
+	//send spawn request
+	bsData.Write((uint32_t)2);
+	send_rpc(ESAMPRPC_RequestSpawn, &bsData);
+
+	CHCGameServer *server = (CHCGameServer *)mp_driver->getServer();
+	server->GetScriptInterface()->HandleEvent(CHCGS_EnterWorld, this, NULL);
+
+}
+void SAMPRakPeer::SetHealth(float hp) {
+	RakNet::BitStream bsData;
+	bsData.Write(hp);
+	send_rpc(ESAMPRPC_SetPlayerHealth, &bsData);
+}
+void SAMPRakPeer::SetArmour(float hp) {
+	RakNet::BitStream bsData;
+	bsData.Write(hp);
+	send_rpc(ESAMPRPC_SetPlayerArmour, &bsData);
+}
+void SAMPRakPeer::SetSkin(int skinid) {
+	RakNet::BitStream bsData;
+	bsData.Write((uint32_t)m_player_id);
+	bsData.Write((uint32_t)skinid);
+	send_rpc(ESAMPRPC_SetPlayerSkin, &bsData);
+}
+void SAMPRakPeer::SetPosition(float x,float y,float z) {
+	RakNet::BitStream bsData;
+	bsData.Write(x);
+	bsData.Write(y);
+	bsData.Write(z);
+	send_rpc(ESAMPRPC_SetPlayerPos, &bsData);
+}
+void SAMPRakPeer::ShowPlayerDialog(int dialogid, int type, const char *title, const char *msg, const char *b1, const char *b2) {
+	RakNet::BitStream bs;
+
+	const char *button_default = "";
+	if(b1 == NULL) b1 = button_default;
+	if(b2 == NULL) b2 = button_default;
+	int b1len = strlen(b1);
+	int b2len = strlen(b2);
+
+	bs.Write((uint16_t)dialogid);
+	bs.Write((uint8_t)type);
+	bs.Write((uint8_t)strlen(title));
+	bs.Write(title, strlen(title));
+
+	bs.Write((uint8_t)b1len);
+	bs.Write(b1, b1len);
+
+	bs.Write((uint8_t)b2len);
+	bs.Write(b2, b2len);
+	StringCompressor::Instance()->EncodeString(msg, strlen(msg)+1, &bs);
+	send_rpc(61, &bs);
 }
 void SAMPRakPeer::send_rpc(uint8_t rpc, RakNet::BitStream *stream) {
 	RakNet::BitStream bs;
@@ -374,9 +520,7 @@ void SAMPRakPeer::send_rpc(uint8_t rpc, RakNet::BitStream *stream) {
 }
 void SAMPRakPeer::send_player_update() {
 	RakNet::BitStream os;
-	uint32_t t = time(NULL);
-	os.Write((uint32_t)6990);
-	os.Write(t);
+	os.Write(mp_driver->getDeltaTime());
 	send_rpc(60, &os);
 }
 void SAMPRakPeer::send_game_init() {
@@ -398,7 +542,7 @@ void SAMPRakPeer::send_game_init() {
 	os.Write((uint32_t)0); //show player markers
 	os.Write((uint8_t)12); //server hour
 	os.Write((uint8_t)1); //server weather
-	os.Write(0.08f); //gravity
+	os.Write(0.008f); //gravity
 	os.WriteCompressed(false); //lan mode
 	os.Write((uint32_t)0); //drop money on death
 	os.WriteCompressed(false); //unknown
@@ -421,7 +565,7 @@ void SAMPRakPeer::send_game_init() {
 	os.Write(servlen);
 	os.Write((const char *)&name,servlen);
 
-	for(int i=0;i<212;i++) {
+	for(int i=0;i<=212;i++) {
 		os.Write((uint8_t)1);
 	}
 	send_rpc(139, &os);

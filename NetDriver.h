@@ -11,6 +11,7 @@ public:
 	virtual void tick() = 0;
 	virtual void think() = 0;
 	virtual int getListenerSocket() = 0;
+	INetServer *getServer() { return m_server; }
 protected:
 	INetServer *m_server;
 };
