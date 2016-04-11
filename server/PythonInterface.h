@@ -22,6 +22,8 @@ typedef struct {
 	std::vector<ScriptCommand *> registered_commands; //curently 1 allocated per cmd per user... make globally shared
 } ClientInfoTable;
 
+//defined in other 
+
 
 class PythonScriptInterface : public IScriptInterface {
 public:
@@ -44,4 +46,29 @@ public:
 	static ScriptCommand *GetScriptCmdFromPyDict(PyObject *self, PyObject *dict);
 
 };
+extern PythonScriptInterface *gbl_pi_interface;
+extern PyTypeObject gs_BaseEntityType;
+extern PyGetSetDef Entity_getseters[];
+extern PyMethodDef BaseEntity_methods[];
+extern PyMemberDef BaseEntity_members[];
+extern PyTypeObject gs_CommandHandlerType;
+extern PyTypeObject gs_ConnectionType;
+
+typedef struct {
+    PyObject_HEAD
+    PyObject *connection;
+    /* Type-specific fields go here. */
+} gs_BaseEntityObject;
+
+typedef struct {
+    PyObject_HEAD
+    /* Type-specific fields go here. */
+} gs_CommandHandlerObject;
+
+//Connection class
+typedef struct {
+    PyObject_HEAD
+    /* Type-specific fields go here. */
+} gs_ConnectionObject;
+
 #endif //_PYSCRIPTINTERFACE_H
