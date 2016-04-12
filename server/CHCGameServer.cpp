@@ -2,10 +2,10 @@
 #include "ScriptInterface.h"
 #include "PythonInterface.h"
 CHCGameServer::CHCGameServer() {
-	mp_script_interface = new PythonScriptInterface(this);
+	mp_script_interface = NULL;
 }
 void CHCGameServer::init() {
-
+	mp_script_interface = new PythonScriptInterface(this);
 }
 void CHCGameServer::tick() {
 	NetworkTick();
@@ -42,4 +42,17 @@ uint32_t CHCGameServer::getMaxPlayers() {
 }
 IScriptInterface *CHCGameServer::GetScriptInterface() {
 	return mp_script_interface;
+}
+
+#include "SAMP/SAMPDriver.h"
+SAMPDriver *CHCGameServer::getSAMPDriver() {
+	std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
+	while(it != m_net_drivers.end()) {
+		SAMPDriver *driver = dynamic_cast<SAMPDriver *>(*it);
+		if(driver) {
+			return driver;
+		}
+		it++;
+	}
+	return NULL;
 }

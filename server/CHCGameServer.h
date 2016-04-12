@@ -16,6 +16,7 @@ typedef struct {
 	int list_index;
 	const char *input;
 } DialogEvent;
+class SAMPDriver;
 class CHCGameServer : public INetServer {
 public:
 	CHCGameServer();
@@ -36,6 +37,7 @@ public:
 	uint32_t getMaxPlayers();
 
 	IScriptInterface *GetScriptInterface();
+	SAMPDriver 		 *getSAMPDriver();
 private:
 	IScriptInterface *mp_script_interface;
 	char m_name[256];

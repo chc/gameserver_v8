@@ -16,7 +16,7 @@ public:
 	void addNetworkDriver(INetDriver *driver);
 protected:
 	void NetworkTick(); //fires the INetEventMgr
-private:
+//private:
 	INetEventManager *mp_net_event_mgr;
 	std::vector<INetDriver *> m_net_drivers;
 };

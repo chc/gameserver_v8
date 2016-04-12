@@ -31,6 +31,8 @@ SAMPRakPeer::SAMPRakPeer(SAMPDriver *driver, struct sockaddr_in *address_info) {
 	m_got_client_join = false;
 	memcpy(&m_address_info,address_info, sizeof(m_address_info));
     StringCompressor::AddReference();
+
+    m_vehicle_stream_distance = 1000.0;
 }
 SAMPRakPeer::~SAMPRakPeer() {
 
@@ -377,6 +379,8 @@ void SAMPRakPeer::set_static_data(const char *data, int len) {
 void SAMPRakPeer::think() {
 	//if(m_got_client_join)
 		//send_ping();
+
+	mp_driver->StreamUpdate(this);
 }
 void SAMPRakPeer::send_ping() {
 	return;
@@ -569,4 +573,75 @@ void SAMPRakPeer::send_game_init() {
 		os.Write((uint8_t)1);
 	}
 	send_rpc(139, &os);
+}
+bool VecInRadius(float r, float x, float y, float z) {
+	return ((x) + (y) + (z)) < (r);
+}
+bool SAMPRakPeer::VehicleInStreamRange(SAMPVehicle *car) {
+	return VecInRadius(m_vehicle_stream_distance, car->pos[0], car->pos[1], car->pos[2]);
+}
+bool SAMPRakPeer::IsVehicleStreamed(SAMPVehicle *car) {
+	std::vector<SAMPStreamRecord>::iterator it = m_streamed_vehicles.begin();
+	while(it != m_streamed_vehicles.end()) {
+		SAMPStreamRecord rec = *it;
+
+		if(rec.data == car) {
+			return true;
+		}
+		it++;
+	}
+	return false;
+}
+void SAMPRakPeer::VehicleStreamCheck(SAMPVehicle *car) {
+	bool is_streamed = IsVehicleStreamed(car);
+
+	if(!is_streamed) {
+		if(VehicleInStreamRange(car)) {
+			 StreamInCar(car);
+		}
+	} else {
+		if(!VehicleInStreamRange(car)) {
+			StreamOutCar(car);
+		}
+	}
+}
+void SAMPRakPeer::StreamInCar(SAMPVehicle *car) {
+	RakNet::BitStream bsData;
+	bsData.Write((uint16_t)car->id);
+	bsData.Write((uint32_t)car->modelid);
+	bsData.Write((float)car->pos[0]);
+	bsData.Write((float)car->pos[1]);
+	bsData.Write((float)car->pos[2]);
+	bsData.Write((float)car->zrot);
+	bsData.Write((uint8_t)car->colours[0]);
+	bsData.Write((uint8_t)car->colours[1]);
+	bsData.Write((float)car->health);
+	bsData.Write((uint8_t)car->interior);
+	bsData.Write((uint32_t)car->doorDamageStatus);
+	bsData.Write((uint32_t)car->panelDamageStatus);
+	bsData.Write((uint8_t)car->lightDamageStatus);
+	bsData.Write((uint8_t)car->tireDamageStatus);
+	bsData.Write((uint8_t)car->addSiren);
+	bsData.Write((char *)&car->components,sizeof(car->components));
+	bsData.Write((uint8_t)car->paintjob);
+	bsData.Write((uint32_t)0); 
+	bsData.Write((uint32_t)0);
+	bsData.Write((uint8_t)0);
+
+	send_rpc(ESAMPRPC_VehicleCreate, &bsData);	
+	SAMPStreamRecord rec;
+	rec.data = (void *)car;
+	m_streamed_vehicles.push_back(rec);
+}
+void SAMPRakPeer::StreamOutCar(SAMPVehicle *car) {
+	RakNet::BitStream bsData;
+	std::vector<SAMPStreamRecord>::iterator it = m_streamed_vehicles.begin();
+	while(it != m_streamed_vehicles.end()) {
+		SAMPStreamRecord rec = *it;
+		if(rec.data == (void *)car) {
+			m_streamed_vehicles.erase(it);
+		}
+		it++;
+	}
+	send_rpc(ESAMPRPC_VehicleDelete, &bsData);	
 }

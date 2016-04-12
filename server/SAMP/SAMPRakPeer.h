@@ -1,11 +1,33 @@
 #ifndef _SAMPRAKPEER_H
 #define _SAMPRAKPEER_H
 #include <main.h>
+#include "SAMPDriver.h"
 #include <RakNet/BitStream.h>
 #include <RakNet/DS_RangeList.h>
 #include <RakNet/StringCompressor.h>
 #include <RakNet/GetTime.h>
 class SAMPDriver;
+
+typedef struct _NEW_VEHICLE {
+    uint16_t VehicleId;
+	uint32_t		  iVehicleType;
+	float	  vecPos[3];
+	float	  fRotation;
+	uint8_t	  aColor1;
+	uint8_t	  aColor2;
+	float	  fHealth;
+	uint8_t	  byteInterior;
+	uint32_t	  dwDoorDamageStatus;
+	uint32_t	  dwPanelDamageStatus;
+	uint8_t	  byteLightDamageStatus;
+	uint8_t	  byteTireDamageStatus;
+	uint8_t	  byteAddSiren;
+	uint8_t      byteModSlots[14];
+	uint8_t	  bytePaintjob;
+	uint32_t	  cColor1;
+	uint32_t	  cColor2;
+	uint8_t	  byteUnk;
+} NEW_VEHICLE;
 
 enum PacketEnumeration
 {
@@ -91,24 +113,18 @@ enum ESAMPConnectionState {
 
 class SAMPRakPeer;
 
-enum ESAMPRPC {
-	ESAMPRPC_SetPlayerPos = 12,	
-	ESAMPRPC_SetPlayerHealth = 14,	
-	ESAMPRPC_ClientJoin = 25,
-	ESAMPRPC_ClientCommand = 50,
-	ESAMPRPC_DialogResponse = 62,
-	ESAMPRPC_SetPlayerArmour = 66,
-	ESAMPRPC_RequestClass = 128,
-	ESAMPRPC_RequestSpawn = 129,
-	ESAMPRPC_ServerJoin = 137,
-	ESAMPRPC_SetPlayerSkin = 153,
-};
+
 typedef struct {
 	uint8_t id;
 	void (SAMPRakPeer::*handler)(RakNet::BitStream *stream);
 } RPCHandler;
 
 #define SAMP_COOKIE_KEY 0x6969
+
+typedef struct {
+	uint32_t stream_in_time;
+	void *data;
+} SAMPStreamRecord;
 
 class SAMPRakPeer {
 public:
@@ -125,6 +141,16 @@ public:
 	void SetSkin(int id);
 	void SpawnPlayer(float x, float y, float z, int skin = 0, int team = -1);
 	void SetPosition(float x, float y, float z);
+	void send_rpc(uint8_t rpc, RakNet::BitStream *stream);
+	void send_bitstream(RakNet::BitStream *stream);
+
+	void StreamInCar(SAMPVehicle *car);
+	void StreamOutCar(SAMPVehicle *car);
+
+	void VehicleStreamCheck(SAMPVehicle *car);
+	bool VehicleInStreamRange(SAMPVehicle *car);
+
+	bool IsVehicleStreamed(SAMPVehicle *car);
 private:
 	void handle_raknet_packet(char *data, int len);
 	void process_bitstream(RakNet::BitStream *stream);
@@ -139,8 +165,6 @@ private:
 
 	void find_rpc_handler_by_id(uint8_t id);
 	void handle_incoming_rpc(RakNet::BitStream *stream);
-	void send_rpc(uint8_t rpc, RakNet::BitStream *stream);
-	void send_bitstream(RakNet::BitStream *stream);
 
 	uint16_t m_cookie_challenge;
 	SAMPDriver *mp_driver;
@@ -155,6 +179,13 @@ private:
 
 	uint16_t m_packet_sequence;
 	uint16_t m_player_id;
+
+	float m_vehicle_stream_distance;
+
+	std::vector<SAMPStreamRecord> m_streamed_vehicles;
+	std::vector<SAMPStreamRecord> m_streamed_players;
+	std::vector<SAMPStreamRecord> m_streamed_textlabels;
+	std::vector<SAMPStreamRecord> m_streamed_pickups;
 
 	//RPC Handlers
 	static RPCHandler s_rpc_handler[];

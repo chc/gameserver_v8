@@ -125,11 +125,13 @@ void PythonScriptInterface::HandleEvent(int event_id, void *user, void *extra) {
 	}
 }
 char *PythonScriptInterface::copyPythonString(PyObject *string) {
-	PyObject *bstr = PyUnicode_AsASCIIString(string);
-	if(bstr && PyBytes_Check(bstr)) {
-		return strdup(PyBytes_AsString(bstr));
+	if(string) {
+		PyObject *bstr = PyUnicode_AsASCIIString(string);
+		if(bstr && PyBytes_Check(bstr)) {
+			return strdup(PyBytes_AsString(bstr));
+		}
 	}
-	return strdup(""); //change this to null when you write the cleaner cleanup...
+	return NULL;
 }
 ScriptCommand *PythonScriptInterface::GetScriptCmdFromPyDict(PyObject *self, PyObject *dict) {
 	PyObject *primarycmd = PyDict_GetItemString(dict, "primary_command");

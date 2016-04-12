@@ -4,6 +4,8 @@
 #include <server/CHCGameServer.h>
 #include <buffwriter.h>
 
+#include "SAMPRakPeer.h"
+
 #define SAMP_MAX_PLAYERS 5
 
 SAMPDriver::SAMPDriver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
@@ -29,16 +31,34 @@ SAMPDriver::SAMPDriver(INetServer *server, const char *host, uint16_t port) : IN
         //signal error
     }
     gettimeofday(&m_server_start, NULL);
+
+    m_last_pickup_id = 0;
+    m_last_3dlabel_id = 0;
 }
 SAMPDriver::~SAMPDriver() {
 
 }
 void SAMPDriver::think() {
+	std::vector<SAMPVehicle *>::iterator itv = m_vehicles.begin();
+	while(itv != m_vehicles.end()) {
+		SAMPVehicle *veh = *itv;
+		itv++;
+	}
+
+
 	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
 	while(it != m_connections.end()) {
 		SAMPRakPeer *peer = *it;
 		peer->think();
 		it++;
+	}
+}
+void SAMPDriver::StreamUpdate(SAMPRakPeer *peer) {
+	std::vector<SAMPVehicle *>::iterator itv = m_vehicles.begin();
+	while(itv != m_vehicles.end()) {
+		SAMPVehicle *veh = *itv;
+		peer->VehicleStreamCheck(veh);
+		itv++;
 	}
 }
 SAMPRakPeer *SAMPDriver::find_client(struct sockaddr_in *address) {
@@ -261,4 +281,121 @@ uint32_t SAMPDriver::getDeltaTime() {
 	gettimeofday(&now, NULL);
 	uint32_t t = (now.tv_usec/1000.0) - (m_server_start.tv_usec/1000.0);
 	return t;
+}
+int SAMPDriver::createPickup(int model, int type, float x, float y, float z) {
+	RakNet::BitStream bs;
+	
+	SAMPPickup *pickup = (SAMPPickup *)malloc(sizeof(SAMPPickup));
+	memset(pickup,0,sizeof(SAMPPickup));
+
+	pickup->iModel = model;
+	pickup->iType = type;
+	pickup->fX = x;
+	pickup->fY = y;
+	pickup->fZ = z;
+	m_last_pickup_id++;
+
+	m_pickups[m_last_pickup_id] = pickup;
+
+	bs.Write((int32_t)m_last_pickup_id);
+	bs.Write((char *)pickup, sizeof(SAMPPickup));
+
+	//SendBitstreamToAll(bs);
+	SendRPCToAll(ESAMPRPC_CreatePickup, &bs);
+
+	return m_last_pickup_id;
+}
+void SAMPDriver::destroyPickup(int id) {
+	
+	free((void *)m_pickups[id]);
+
+	m_pickups.erase(id);
+
+	RakNet::BitStream bs;
+	bs.Write((int32_t)id);
+
+	SendRPCToAll(ESAMPRPC_DestroyPickup, &bs);
+	
+}
+
+
+int SAMPDriver::create3DTextLabel(const char *string, uint32_t colour, float x, float y, float z, float draw_distance, bool test_los, int world, int stream_index) {
+	m_last_3dlabel_id++;
+
+	SAMP3DLabel *label = (SAMP3DLabel *)malloc(sizeof(SAMP3DLabel));
+	memset(label,0,sizeof(SAMP3DLabel));
+	label->x = x;
+	label->y = y;
+	label->z = z;
+	label->colour = colour;
+	strcpy(label->string, string); //eeee
+	label->draw_distance = draw_distance;
+	label->test_los = test_los;
+
+	m_3dlabels[m_last_3dlabel_id] = label;
+
+	RakNet::BitStream bs;
+	bs.Write((uint16_t)m_last_3dlabel_id);
+	bs.Write(colour);
+	bs.Write(x);
+	bs.Write(y);
+	bs.Write(z);
+	bs.Write(draw_distance);
+	bs.Write((uint8_t)test_los);
+	bs.Write((uint16_t)-1); //player id
+	bs.Write((uint16_t)-1); //vehicle id
+
+	StringCompressor::Instance()->EncodeString(string, strlen(string)+1, &bs);
+
+	SendRPCToAll(ESAMPRPC_Create3DTextLabel, &bs);
+	return m_last_3dlabel_id;
+}
+
+int SAMPDriver::CreateVehicle(int modelid, float x, float y, float z, float zrot, uint8_t c1,uint8_t c2, bool respawn_on_death, int respawn_time) {
+	SAMPVehicle *veh = (SAMPVehicle *)malloc(sizeof(SAMPVehicle));
+	memset(veh, 0, sizeof(SAMPVehicle));
+
+	veh->id = 1999;
+	veh->modelid = modelid;
+	veh->health = 1000.0;
+	veh->pos[0] = x;
+	veh->pos[1] = y;
+	veh->pos[2] = z;
+
+	veh->colours[0] = c1;
+	veh->colours[1] = c2;
+
+	m_vehicles.push_back(veh);
+
+	printf("Made new car: %d\n", veh->id);
+
+	return veh->id;
+
+}
+
+void SAMPDriver::destroy3DTextLabel(int label) {
+	RakNet::BitStream bs;
+
+	bs.Write((uint16_t)m_last_3dlabel_id);
+	SendRPCToAll(ESAMPRPC_Delete3DTextLabel, &bs);
+
+	free((void *)m_3dlabels[label]);
+	m_3dlabels.erase(label);	
+}
+
+void SAMPDriver::SendBitstreamToAll(RakNet::BitStream *bs) {
+	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
+	while(it != m_connections.end()) {
+		SAMPRakPeer *peer = *it;
+		peer->send_bitstream(bs);
+		it++;
+	}
+}
+void SAMPDriver::SendRPCToAll(int rpc_id, RakNet::BitStream *bs) {
+	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
+	while(it != m_connections.end()) {
+		SAMPRakPeer *peer = *it;
+		peer->send_rpc(rpc_id, bs);
+		it++;
+	}
 }

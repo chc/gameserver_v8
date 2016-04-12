@@ -147,7 +147,6 @@ PyObject *pyi_cmdhndlr_registercmds(PyObject *self, PyObject *args)
     PyObject *seq;
     PyObject *cmd_dict;
 
-	Py_ssize_t pos = 0;
     int len;
     if (!PyArg_ParseTuple(args, "O", &obj))
         Py_RETURN_NONE;

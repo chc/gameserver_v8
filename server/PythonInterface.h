@@ -41,7 +41,6 @@ public:
 	PyTypeObject *mp_connection_handler;
 	static char *copyPythonString(PyObject *string);
 
-
 	//stuff that should private
 	static ScriptCommand *GetScriptCmdFromPyDict(PyObject *self, PyObject *dict);
 

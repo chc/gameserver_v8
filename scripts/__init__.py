@@ -32,6 +32,10 @@ class PlayerEntity(GenericEntity):
 class SAMP3DTextEntity(GenericEntity):
 	def __init__(self):
 		print("asdasd")
+
+class PickupEntity(GenericEntity):
+	def __init__(self):
+		print("Pickup entity")
 class SAMPHandler(CoreServer.Connection, CoreServer.CommandHandler):
 	def handle_pmcmd(self, string):
 		print("PM command: {}".format(string))
@@ -46,16 +50,23 @@ class SAMPHandler(CoreServer.Connection, CoreServer.CommandHandler):
 		#self.Entity.Position = [0.0,0.0,100.0]
 		#self.Entity.Weapons = {24: 50, 31: 1000}
 		#self.Entity.Weapons[24] += 100
+		#self.pickup = SAMP.CreatePickup({'model': 1222, 'position': [1529.6,-1691.2,13.3], 'pickup_type': 1, 'world': 0, 'stream_index': 0, 'pickup_event': pickup_event})
 		self.Entity.Model = 6
+		self._3dtext = SAMP.Create3DTextLabel({'position': [1529.6,-1691.2,13.3], 'text': 'This is some text', 'test_los': False, 'draw_distance': 500.0})
+		self.vehicle = SAMP.CreateVehicle({'model':411, 'position': [1529.6,-1691.2,13.3], 'world': 0, 'stream_index': 0, 'colour': [1,0]})
 		#World.CreateVehicle({'position': [1529.6,-1691.2,13.3], 'model': 411})
 		self.SendMessage(0xFF00FFFF, "Set stuff")
+	def handle_testcmd2(self, string):
+		#SAMP.DestroyPickup(self.pickup)
+		SAMP.Destroy3DTextLabel(self._3dtext)
+		self.SendMessage(0xFF00FFFF, "Pickup destrsoyed")
 	def handle_testdlg(self, string):
 		Frontend.CreateModal(self, {'title': 'Test Dialog', 'message': 'Please enter a string', 'type': Frontend.INPUT_BOX, 'buttons': ['Ok', 'Cancel'], 'callback': self.handle_dialog, 'extra': 'anything'})
 	def __init__(self):
 		self.Entity = PlayerEntity(self)
 		self.SetEntity(self.Entity)
-		Entity.Camera.Position = [100, 100, 100]
-		Entity.Camera.Lerp(100.0, 200.0, 300.0, 18000)
+		#self.Entity.Camera.Position = [100, 100, 100]
+		#self.Entity.Camera.Lerp(100.0, 200.0, 300.0, 18000)
 		#Entity.Camera.Slerp()
 		#self.PutInWorld(0)
 		#self.SetStreamIndex(0)
@@ -65,6 +76,7 @@ class SAMPHandler(CoreServer.Connection, CoreServer.CommandHandler):
 			{'primary_command': 'pm', 'aliases': ['privatemessage', 'privmsg'], 'function': self.handle_pmcmd},
 			{'primary_command': 'dialog', 'aliases': ['dlg'], 'function': self.handle_testdlg},
 			{'primary_command': 'test', 'aliases': ['blah'], 'function': self.handle_testcmd},
+			{'primary_command': 'boom', 'aliases': ['blah'], 'function': self.handle_testcmd2},
 			{'primary_command': 'spawn', 'function': self.Entity.handle_spawncmd},
 
 		] #commands which are usable at any user state
@@ -75,10 +87,10 @@ def pickup_event(pickup_entity, player_entity):
 	print("asdasd")
 CoreServer.SetConnectionHandler(SAMPHandler)
 SAMP.SetPickupEntity(PickupEntity)
-SAMP.Set3DTextEntity(SAMP3DTextEntity)
-SAMP.CreatePickup({'model': 1222, 'position': [1529.6,-1691.2,13.3], 'pickup_type': 1, 'world': 0, 'stream_index': 0, 'pickup_event': pickup_event})
-SAMP.Create3DLabel({'text': 'Some text','position': [1529.6,-1691.2,15.3],'colour': 0xFFFFFFFF, 'world': 0, 'stream_index': 0});
-SAMP.CreateVehicle({'model':411, 'position': [1529.6,-1691.2,13.3], 'world': 0, 'stream_index': 0, 'colour': [1,0]})
+SAMP.Set3DTextLabelEntity(SAMP3DTextEntity)
+#SAMP.CreatePickup({'model': 1222, 'position': [1529.6,-1691.2,13.3], 'pickup_type': 1, 'world': 0, 'stream_index': 0, 'pickup_event': pickup_event})
+#SAMP.Create3DTextLabel({'text': 'Some text','position': [1529.6,-1691.2,15.3],'colour': 0xFFFFFFFF, 'world': 0, 'stream_index': 0});
+#SAMP.CreateVehicle({'model':411, 'position': [1529.6,-1691.2,13.3], 'world': 0, 'stream_index': 0, 'colour': [1,0]})
 
 #the_bot = BotEntity()
 #CoreServer.AddEntity(the_bot, {'world': 0,'stream_index': 0, 'position': [1529.6,-1691.2,13.3], 'model': 122 })
