@@ -8,6 +8,12 @@ typedef struct {
 	PyObject *pickup_event;
 } SAMPPyPickup;
 
+struct {
+	PyTypeObject *mp_base_pickup;
+	PyTypeObject *mp_base_text_label;
+	PyTypeObject *mp_base_vehicle;
+} SAMPScriptState;
+
 std::vector<SAMPPyPickup *> py_samp_pickup_list;
 
 PyObject *pyi_samp_createpickup(PyObject *self, PyObject *args);
@@ -37,6 +43,7 @@ PyMethodDef SAMP_methods[] = {
  								    {"SetVehicleEntity",  (PyCFunction)pyi_samp_setvehicleentity, METH_O,
  								    "Sets the vehicle entity"},
     								{NULL, NULL, 0, NULL}};
+
 struct PyModuleDef samp_module = {
    PyModuleDef_HEAD_INIT,
    "SAMP",   /* name of module */
@@ -45,6 +52,8 @@ struct PyModuleDef samp_module = {
                 or -1 if the module keeps state in global variables. */
    SAMP_methods
 };
+
+
 
 
 PyMODINIT_FUNC
@@ -199,11 +208,17 @@ PyObject *pyi_samp_createvehicle(PyObject *self, PyObject *args) {
 }
 
 PyObject *pyi_samp_setpickupentity(PyObject *self, PyObject *args) {
+	SAMPScriptState.mp_base_pickup = (PyTypeObject *)args;
+    Py_INCREF(SAMPScriptState.mp_base_pickup);
 	Py_RETURN_NONE;
 }
 PyObject *pyi_samp_set3dtextextentity(PyObject *self, PyObject *args) {
+	SAMPScriptState.mp_base_text_label = (PyTypeObject *)args;
+    Py_INCREF(SAMPScriptState.mp_base_text_label);
 	Py_RETURN_NONE;
 }
 PyObject *pyi_samp_setvehicleentity(PyObject *self, PyObject *args) {
+	SAMPScriptState.mp_base_vehicle = (PyTypeObject *)args;
+    Py_INCREF(SAMPScriptState.mp_base_vehicle);
 	Py_RETURN_NONE;
 }

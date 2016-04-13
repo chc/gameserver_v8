@@ -2,6 +2,7 @@
 #define _PYSCRIPTINTERFACE_H
 #include "main.h"
 #include "ScriptInterface.h"
+#include <server/SAMP/SAMPDriver.h>
 #include <vector>
 #include <Python.h>
 class SAMPRakPeer;
@@ -18,6 +19,7 @@ typedef struct {
 	SAMPRakPeer *user;
 	PyObject* connection_object;
 	PyObject* entity;
+	SAMPBotUser *bot_user;
 	PyObject* last_dialog_callback;
 	std::vector<ScriptCommand *> registered_commands; //curently 1 allocated per cmd per user... make globally shared
 } ClientInfoTable;
@@ -31,6 +33,7 @@ public:
 	~PythonScriptInterface();
 	ClientInfoTable *findClient(void *user, bool create = false);
 	ClientInfoTable *findClientByConnObj(PyObject *conn);
+	ClientInfoTable *findClientByEntity(PyObject *entity, bool create = false, bool create_bot = false);
 	void run();
 	void HandleEvent(int event_id, void *user, void *extra);
 	void HandleClientCommand(void *user, const char *extra);

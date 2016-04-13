@@ -36,6 +36,7 @@ void PythonScriptInterface::run() {
 }
 ClientInfoTable *PythonScriptInterface::findClientByConnObj(PyObject *conn) {
 	ClientInfoTable *table;
+	if(conn == NULL) return NULL;
 	std::vector<ClientInfoTable *>::iterator it = m_clients.begin();
 	while(it != m_clients.end()) {
 		table = *it;
@@ -61,6 +62,29 @@ ClientInfoTable *PythonScriptInterface::findClient(void *user, bool create) {
 		table = (ClientInfoTable *)malloc(sizeof(ClientInfoTable));
 		memset(table, 0, sizeof(ClientInfoTable));
 		table->user = (SAMPRakPeer *)user;
+		m_clients.push_back(table);
+		return table;
+	}
+
+	return NULL;
+}
+ClientInfoTable *PythonScriptInterface::findClientByEntity(PyObject *entity, bool create, bool create_bot) {
+	ClientInfoTable *table;
+	std::vector<ClientInfoTable *>::iterator it = m_clients.begin();
+	while(it != m_clients.end()) {
+		table = *it;
+		if(table->entity == (void *)entity) {
+			return table;
+		}
+	}
+	if(create) {
+		table = (ClientInfoTable *)malloc(sizeof(ClientInfoTable));
+		memset(table, 0, sizeof(ClientInfoTable));
+		table->entity = entity;
+
+		if(create_bot) {
+			table->bot_user = getGameServer()->getSAMPDriver()->CreateBot();
+		}
 		m_clients.push_back(table);
 		return table;
 	}

@@ -11,6 +11,8 @@ int Entity_setarmour(gs_BaseEntityObject *self, PyObject *value, void *closure);
 PyObject *Entity_getarmour(gs_BaseEntityObject *self, void *closure);
 int Entity_sethp(gs_BaseEntityObject *self, PyObject *value, void *closure);
 PyObject *Entity_gethp(gs_BaseEntityObject *self, void *closure);
+int Entity_setname(gs_BaseEntityObject *self, PyObject *value, void *closure);
+PyObject *Entity_getname(gs_BaseEntityObject *self, void *closure);
 
 PyTypeObject gs_BaseEntityType = {
     PyVarObject_HEAD_INIT(NULL, 0)
@@ -59,6 +61,10 @@ PyGetSetDef Entity_getseters[] = {
      (getter)Entity_getpos, (setter)Entity_setpos,
      "Entity Position",
      NULL},
+    {"Name", 
+     (getter)Entity_getname, (setter)Entity_setname,
+     "Entity Health",
+     NULL},
     {NULL}  /* Sentinel */
 };
 PyMethodDef BaseEntity_methods[] = {
@@ -66,10 +72,17 @@ PyMethodDef BaseEntity_methods[] = {
  								    "Registers commands to be processed by the handler"},
     								{NULL, NULL, 0, NULL}};
 
-
 PyObject *Entity_gethp(gs_BaseEntityObject *self, void *closure)
 {
-    return PyLong_FromLong(100);
+	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(self->connection);
+	if(tbl) {
+ 		return PyLong_FromLong(tbl->user->GetHealth());
+	} else {
+		tbl = gbl_pi_interface->findClientByEntity((PyObject *)self, true, true);
+		if(tbl)
+			return PyFloat_FromDouble(tbl->bot_user->health);
+	}
+    return PyLong_FromLong(0);
 }
 
 int Entity_sethp(gs_BaseEntityObject *self, PyObject *value, void *closure)
@@ -77,26 +90,54 @@ int Entity_sethp(gs_BaseEntityObject *self, PyObject *value, void *closure)
 	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(self->connection);
 	if(tbl) {
 		tbl->user->SetHealth(PyFloat_AsDouble(value));
+	} else {
+		tbl = gbl_pi_interface->findClientByEntity((PyObject *)self, true, true);
+		if(tbl) {
+			tbl->bot_user->health = PyFloat_AsDouble(value);
+		}
 	}
 	return 0;
 }
 
 PyObject *Entity_getarmour(gs_BaseEntityObject *self, void *closure)
 {
-    return PyLong_FromLong(100);
+	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(self->connection);
+	if(tbl) {
+ 		return PyLong_FromLong(tbl->user->GetArmour());
+	} else {
+		tbl = gbl_pi_interface->findClientByEntity((PyObject *)self, true, true);
+		if(tbl)
+			return PyFloat_FromDouble(tbl->bot_user->armour);
+	}
+    return PyLong_FromLong(0);
 }
 
 int Entity_setarmour(gs_BaseEntityObject *self, PyObject *value, void *closure)
 {
 	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(self->connection);
 	if(tbl) {
-		tbl->user->SetArmour(PyFloat_AsDouble(value));
+		if(tbl->user) {
+			tbl->user->SetArmour(PyFloat_AsDouble(value));
+		}
+	} else {
+		tbl = gbl_pi_interface->findClientByEntity((PyObject *)self);
+		if(tbl) {
+			tbl->bot_user->health = PyFloat_AsDouble(value);
+		}
 	}
 	return 0;
 }
 
 PyObject *Entity_getmodel(gs_BaseEntityObject *self, void *closure)
 {
+	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(self->connection);
+	if(tbl) {
+ 		return PyLong_FromLong(tbl->user->GetModelID());
+	} else {
+		tbl = gbl_pi_interface->findClientByEntity((PyObject *)self, true, true);
+		if(tbl)
+			return PyFloat_FromDouble(tbl->bot_user->modelid);
+	}
     return PyLong_FromLong(100);
 }
 
@@ -105,6 +146,11 @@ int Entity_setmodel(gs_BaseEntityObject *self, PyObject *value, void *closure)
 	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(self->connection);
 	if(tbl) {
 		tbl->user->SetSkin(PyLong_AsLong(value));
+	} else {
+		tbl = gbl_pi_interface->findClientByEntity((PyObject *)self, true, true);
+		if(tbl) {
+			tbl->bot_user->modelid = PyLong_AsLong(value);
+		}	
 	}
 	return 0;
 }
@@ -113,23 +159,54 @@ int Entity_setmodel(gs_BaseEntityObject *self, PyObject *value, void *closure)
 
 PyObject *Entity_getpos(gs_BaseEntityObject *self, void *closure)
 {
+	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(self->connection);
+	PyObject *list = PyList_New(3);
+	float *pos;
+	if(tbl) {
+		Py_INCREF(list);
+		if(tbl) {
+			pos = tbl->user->GetPosition();
+			PyList_SET_ITEM(list, 0, PyFloat_FromDouble(pos[0]));
+			PyList_SET_ITEM(list, 1, PyFloat_FromDouble(pos[1]));
+			PyList_SET_ITEM(list, 2, PyFloat_FromDouble(pos[2]));
+			Py_INCREF(list);		
+			return list;
+		}
+	} else {
+		tbl = gbl_pi_interface->findClientByEntity((PyObject *)self, true, true);
+		if(tbl) {
+			pos = (float *)&tbl->bot_user->pos;
+			PyList_SET_ITEM(list, 0, PyFloat_FromDouble(pos[0]));
+			PyList_SET_ITEM(list, 1, PyFloat_FromDouble(pos[1]));
+			PyList_SET_ITEM(list, 2, PyFloat_FromDouble(pos[2]));
+			Py_INCREF(list);		
+			return list;
+		}
+	}
     return PyLong_FromLong(100);
 }
 
 int Entity_setpos(gs_BaseEntityObject *self, PyObject *value, void *closure)
 {
 	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(self->connection);
+	float x,y,z;
+	if(PyList_Check(value)) {		
+		PyObject *seq = PySequence_Fast(value, "expected a sequence");
+		PyObject *pyx = PyList_GET_ITEM(seq, 0);
+		PyObject *pyy = PyList_GET_ITEM(seq, 1);
+		PyObject *pyz = PyList_GET_ITEM(seq, 2);
+		x = PyFloat_AsDouble(pyx);
+		y = PyFloat_AsDouble(pyy);
+		z = PyFloat_AsDouble(pyz);
+	}
 	if(tbl) {
-		if(PyList_Check(value)) {
-			float x,y,z;
-			PyObject *seq = PySequence_Fast(value, "expected a sequence");
-			PyObject *pyx = PyList_GET_ITEM(seq, 0);
-			PyObject *pyy = PyList_GET_ITEM(seq, 1);
-			PyObject *pyz = PyList_GET_ITEM(seq, 2);
-			x = PyFloat_AsDouble(pyx);
-			y = PyFloat_AsDouble(pyy);
-			z = PyFloat_AsDouble(pyz);
 			tbl->user->SetPosition(x,y,z);
+	} else {
+		tbl = gbl_pi_interface->findClientByEntity((PyObject *)self, true, true);
+		if(tbl) {
+			tbl->bot_user->pos[0] = x;
+			tbl->bot_user->pos[1] = y;
+			tbl->bot_user->pos[2] = z;
 		}
 	}
 	return 0;
@@ -163,4 +240,22 @@ PyObject *pyi_baseentity_spawn(gs_BaseEntityObject *self, PyObject *args)
 		}
 	}
 	Py_RETURN_NONE;
+}
+int Entity_setname(gs_BaseEntityObject *self, PyObject *value, void *closure) {
+	PyObject *bstr = PyUnicode_AsASCIIString(value);
+	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(self->connection);
+	if(PyBytes_Check(bstr)) {
+		if(tbl) {
+			tbl->user->SetName(PyBytes_AsString(bstr));
+		} else {
+			tbl = gbl_pi_interface->findClientByEntity((PyObject *)self, true, true);
+			if(tbl) {
+				strcpy(tbl->bot_user->name, PyBytes_AsString(bstr));
+			}
+		}
+	}
+	return 0;
+}
+PyObject *Entity_getname(gs_BaseEntityObject *self, void *closure) {
+
 }

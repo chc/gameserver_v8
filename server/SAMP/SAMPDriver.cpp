@@ -60,6 +60,21 @@ void SAMPDriver::StreamUpdate(SAMPRakPeer *peer) {
 		peer->VehicleStreamCheck(veh);
 		itv++;
 	}
+	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
+	while(it != m_connections.end()) {
+		SAMPRakPeer *user = *it;
+		if(user != peer) {
+			peer->PlayerStreamCheck(user);
+		}
+		it++;
+	}
+
+	std::vector<SAMPBotUser *>::iterator itb = m_bots.begin();
+	while(itb != m_bots.end()) {
+		SAMPBotUser *user = *itb;
+		peer->BotStreamCheck(user);
+		itb++;
+	}
 }
 SAMPRakPeer *SAMPDriver::find_client(struct sockaddr_in *address) {
 	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
@@ -397,5 +412,31 @@ void SAMPDriver::SendRPCToAll(int rpc_id, RakNet::BitStream *bs) {
 		SAMPRakPeer *peer = *it;
 		peer->send_rpc(rpc_id, bs);
 		it++;
+	}
+}
+SAMPBotUser* SAMPDriver::CreateBot() {
+	SAMPBotUser *bot = (SAMPBotUser *)malloc(sizeof(SAMPBotUser));
+	memset(bot, 0, sizeof(SAMPBotUser));
+	bot->playerid = 666;
+	return bot;
+}
+void SAMPDriver::AddBot(SAMPBotUser *bot) {
+	m_bots.push_back(bot);
+}
+void SAMPDriver::SendScoreboard(SAMPRakPeer *peer) {
+	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
+	while(it != m_connections.end()) {
+		SAMPRakPeer *user = *it;
+		if(user != peer) {
+			peer->AddToScoreboard(user);
+		}
+		it++;
+	}
+
+	std::vector<SAMPBotUser *>::iterator itb = m_bots.begin();
+	while(itb != m_bots.end()) {
+		SAMPBotUser *user = *itb;
+		peer->AddToScoreboard(user);
+		itb++;
 	}
 }

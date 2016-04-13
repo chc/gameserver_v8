@@ -33,6 +33,18 @@ SAMPRakPeer::SAMPRakPeer(SAMPDriver *driver, struct sockaddr_in *address_info) {
     StringCompressor::AddReference();
 
     m_vehicle_stream_distance = 1000.0;
+
+    m_health = 100.0;
+    m_armour = 0.0;
+    m_team = 0xFF;
+    strcpy(m_name,"Bob");
+    m_pos[0] = 0.0;
+    m_pos[1] = 0.0;
+    m_pos[2] = 0.0;
+    m_model_id = 1;
+    m_colour = 0xFFFFFFFF;
+    m_fightstyle = 0;
+    m_spawned = false;
 }
 SAMPRakPeer::~SAMPRakPeer() {
 
@@ -379,8 +391,8 @@ void SAMPRakPeer::set_static_data(const char *data, int len) {
 void SAMPRakPeer::think() {
 	//if(m_got_client_join)
 		//send_ping();
-
-	mp_driver->StreamUpdate(this);
+	if(m_spawned)
+		mp_driver->StreamUpdate(this);
 }
 void SAMPRakPeer::send_ping() {
 	return;
@@ -467,6 +479,8 @@ void SAMPRakPeer::SpawnPlayer(float x, float y, float z, int skin, int team) {
 
 	CHCGameServer *server = (CHCGameServer *)mp_driver->getServer();
 	server->GetScriptInterface()->HandleEvent(CHCGS_EnterWorld, this, NULL);
+
+	m_spawned = true;
 
 }
 void SAMPRakPeer::SetHealth(float hp) {
@@ -573,37 +587,8 @@ void SAMPRakPeer::send_game_init() {
 		os.Write((uint8_t)1);
 	}
 	send_rpc(139, &os);
-}
-bool VecInRadius(float r, float x, float y, float z) {
-	return ((x) + (y) + (z)) < (r);
-}
-bool SAMPRakPeer::VehicleInStreamRange(SAMPVehicle *car) {
-	return VecInRadius(m_vehicle_stream_distance, car->pos[0], car->pos[1], car->pos[2]);
-}
-bool SAMPRakPeer::IsVehicleStreamed(SAMPVehicle *car) {
-	std::vector<SAMPStreamRecord>::iterator it = m_streamed_vehicles.begin();
-	while(it != m_streamed_vehicles.end()) {
-		SAMPStreamRecord rec = *it;
 
-		if(rec.data == car) {
-			return true;
-		}
-		it++;
-	}
-	return false;
-}
-void SAMPRakPeer::VehicleStreamCheck(SAMPVehicle *car) {
-	bool is_streamed = IsVehicleStreamed(car);
-
-	if(!is_streamed) {
-		if(VehicleInStreamRange(car)) {
-			 StreamInCar(car);
-		}
-	} else {
-		if(!VehicleInStreamRange(car)) {
-			StreamOutCar(car);
-		}
-	}
+	mp_driver->SendScoreboard(this);
 }
 void SAMPRakPeer::StreamInCar(SAMPVehicle *car) {
 	RakNet::BitStream bsData;
@@ -643,5 +628,178 @@ void SAMPRakPeer::StreamOutCar(SAMPVehicle *car) {
 		}
 		it++;
 	}
+	bsData.Write(car->id);
 	send_rpc(ESAMPRPC_VehicleDelete, &bsData);	
+}
+bool VecInRadius(float r, float x, float y, float z) {
+	return ((x) + (y) + (z)) < (r);
+}
+bool SAMPRakPeer::VehicleInStreamRange(SAMPVehicle *car) {
+	return VecInRadius(m_vehicle_stream_distance, car->pos[0], car->pos[1], car->pos[2]);
+}
+bool SAMPRakPeer::IsVehicleStreamed(SAMPVehicle *car) {
+	std::vector<SAMPStreamRecord>::iterator it = m_streamed_vehicles.begin();
+	while(it != m_streamed_vehicles.end()) {
+		SAMPStreamRecord rec = *it;
+
+		if(rec.data == car) {
+			return true;
+		}
+		it++;
+	}
+	return false;
+}
+bool SAMPRakPeer::IsPlayerStreamed(SAMPRakPeer *car) {
+	std::vector<SAMPStreamRecord>::iterator it = m_streamed_players.begin();
+	while(it != m_streamed_players.end()) {
+		SAMPStreamRecord rec = *it;
+
+		if(rec.data == car) {
+			return true;
+		}
+		it++;
+	}
+	return false;
+}
+bool SAMPRakPeer::IsBotStreamed(SAMPBotUser *car) {
+	std::vector<SAMPStreamRecord>::iterator it = m_streamed_bots.begin();
+	while(it != m_streamed_bots.end()) {
+		SAMPStreamRecord rec = *it;
+
+		if(rec.data == car) {
+			return true;
+		}
+		it++;
+	}
+	return false;
+}
+void SAMPRakPeer::VehicleStreamCheck(SAMPVehicle *car) {
+	bool is_streamed = IsVehicleStreamed(car);
+
+	if(!is_streamed) {
+		if(VehicleInStreamRange(car)) {
+			 StreamInCar(car);
+		}
+	} else {
+		if(!VehicleInStreamRange(car)) {
+			StreamOutCar(car);
+		}
+	}
+}
+void SAMPRakPeer::PlayerStreamCheck(SAMPRakPeer *car) {
+	bool is_streamed = IsPlayerStreamed(car);
+
+	if(!is_streamed) {
+		if(PlayerInStreamRange(car)) {
+			 StreamInPlayer(car);
+		}
+	} else {
+		if(!PlayerInStreamRange(car)) {
+			StreamOutPlayer(car);
+		}
+	}
+}
+bool SAMPRakPeer::PlayerInStreamRange(SAMPRakPeer *car) {
+	float *pos = car->GetPosition();
+	return VecInRadius(m_vehicle_stream_distance, pos[0], pos[1], pos[2]);
+}
+void SAMPRakPeer::BotStreamCheck(SAMPBotUser *car) {
+	bool is_streamed = IsBotStreamed(car);
+
+	if(!is_streamed) {
+		if(BotInStreamRange(car)) {
+			 StreamInBot(car);
+		}
+	} else {
+		if(!BotInStreamRange(car)) {
+			StreamOutBot(car);
+		}
+	}
+}
+bool SAMPRakPeer::BotInStreamRange(SAMPBotUser *car) {
+	return VecInRadius(m_vehicle_stream_distance, car->pos[0], car->pos[1], car->pos[2]);
+}
+void SAMPRakPeer::StreamInBot(SAMPBotUser *car) {
+	RakNet::BitStream bsData;
+	bsData.Write(car->playerid);
+	bsData.Write(car->team);
+	bsData.Write(car->modelid);
+	bsData.Write(car->pos[0]);
+	bsData.Write(car->pos[1]);
+	bsData.Write(car->pos[2]);
+	bsData.Write(car->zrot);
+	bsData.Write(car->colour);
+	bsData.Write(car->fightstyle);
+	send_rpc(ESAMPRPC_AddPlayerToWorld, &bsData);
+
+	SAMPStreamRecord rec;
+	rec.data = (void *)car;
+	m_streamed_bots.push_back(rec);
+	printf("Stream in bot (%f,%f,%f)\n", car->pos[0], car->pos[1], car->pos[2]);
+}
+void SAMPRakPeer::StreamOutBot(SAMPBotUser *car) {
+	RakNet::BitStream bsData;
+	bsData.Write(car->playerid);
+	send_rpc(ESAMPRPC_DeletePlayerFromWorld, &bsData);
+
+	std::vector<SAMPStreamRecord>::iterator it = m_streamed_bots.begin();
+	while(it != m_streamed_bots.end()) {
+		SAMPStreamRecord rec = *it;
+		if(rec.data == (void *)car) {
+			m_streamed_bots.erase(it);
+		}
+		it++;
+	}
+}
+void SAMPRakPeer::StreamInPlayer(SAMPRakPeer *car) {
+	RakNet::BitStream bsData;
+	bsData.Write(m_player_id);
+	bsData.Write(m_team);
+	bsData.Write(m_model_id);
+	bsData.Write(m_pos[0]);
+	bsData.Write(m_pos[1]);
+	bsData.Write(m_pos[2]);
+	bsData.Write(m_rot_z);
+	bsData.Write(m_colour);
+	bsData.Write(m_fightstyle);
+	send_rpc(ESAMPRPC_AddPlayerToWorld, &bsData);
+	SAMPStreamRecord rec;
+	rec.data = (void *)car;
+	m_streamed_players.push_back(rec);
+}
+void SAMPRakPeer::StreamOutPlayer(SAMPRakPeer *peer) {
+	RakNet::BitStream bsData;
+	bsData.Write(peer->m_player_id);
+	send_rpc(ESAMPRPC_DeletePlayerFromWorld, &bsData);
+	std::vector<SAMPStreamRecord>::iterator it = m_streamed_players.begin();
+	while(it != m_streamed_players.end()) {
+		SAMPStreamRecord rec = *it;
+		if(rec.data == (void *)peer) {
+			m_streamed_players.erase(it);
+		}
+		it++;
+	}
+}
+
+void SAMPRakPeer::AddToScoreboard(SAMPBotUser *bot) {
+	RakNet::BitStream bs;
+	bs.Write(bot->playerid);
+	bs.Write((uint32_t)bot->colour); //colour, 0 = client chooses
+	bs.Write((uint8_t)bot->is_npc); //isNPC
+	bs.Write((uint8_t)strlen(bot->name));
+	bs.Write(bot->name, strlen(bot->name));
+	send_rpc(ESAMPRPC_ServerJoin, &bs);
+	printf("Adding bot to score.. %d\n", bot->playerid);
+}
+void SAMPRakPeer::AddToScoreboard(SAMPRakPeer *peer) {
+	RakNet::BitStream bs;
+	bs.Write(m_player_id);
+	bs.Write((uint32_t)m_colour); //colour, 0 = client chooses
+	bs.Write((uint8_t)0); //isNPC
+	bs.Write((uint8_t)strlen(m_name));
+	bs.Write(m_name, strlen(m_name));
+	send_rpc(ESAMPRPC_ServerJoin, &bs);
+}
+void SAMPRakPeer::SetName(const char *name) {
+
 }

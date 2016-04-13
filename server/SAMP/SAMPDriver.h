@@ -23,6 +23,9 @@ enum ESAMPRPC {
 	ESAMPRPC_SetPlayerPos = 12,	
 	ESAMPRPC_SetPlayerHealth = 14,	
 	ESAMPRPC_ClientJoin = 25,
+	ESAMPRPC_AddPlayerToWorld = 32,
+	ESAMPRPC_DeletePlayerFromWorld = 163,
+	ESAMPRPC_PlayerDeath = 166,
 	ESAMPRPC_Create3DTextLabel = 36,
 	ESAMPRPC_ClientCommand = 50,
 	ESAMPRPC_Delete3DTextLabel = 58,
@@ -37,6 +40,7 @@ enum ESAMPRPC {
 	ESAMPRPC_VehicleCreate = 164,
 	ESAMPRPC_VehicleDelete = 165,
 };
+
 
 typedef struct {
 	uint32_t magic;
@@ -104,6 +108,20 @@ typedef struct {
 	uint8_t	  	paintjob;
 } SAMPVehicle;
 
+typedef struct {
+	float health;
+	float armour;
+	uint16_t playerid;
+	uint8_t team;
+	char name[24];
+	bool is_npc;
+	float pos[3];
+	float zrot;
+	uint32_t modelid;
+	uint32_t colour;
+	uint8_t fightstyle;
+} SAMPBotUser;
+
 class SAMPDriver : public INetDriver {
 public:
 	SAMPDriver(INetServer *server, const char *host, uint16_t port);
@@ -127,6 +145,12 @@ public:
 	int CreateVehicle(int modelid, float x, float y, float z, float zrot, uint8_t c1,uint8_t c2, bool respawn_on_death = false, int respawn_time = 3600);
 
 	void StreamUpdate(SAMPRakPeer *peer);
+
+	SAMPBotUser* CreateBot();
+	void AddBot(SAMPBotUser *bot);
+
+	void SendScoreboard(SAMPRakPeer *peer);
+	void SendScoreboard(SAMPBotUser *peer);
 private:
 
 	//samp query stuff
@@ -146,6 +170,7 @@ private:
 	uint16_t m_port;
 	int m_sd;
 	std::vector<SAMPRakPeer *> m_connections;
+	std::vector<SAMPBotUser *> m_bots;
 	struct sockaddr_in m_local_addr;
 
 	struct timeval m_server_start;

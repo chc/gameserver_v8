@@ -1,6 +1,7 @@
 #include "../PythonInterface.h"
 #include "../SAMP/SAMPRakPeer.h"
 #include <structmember.h>
+#include <server/CHCGameServer.h>
 
 
 PyTypeObject gs_ConnectionType = {
@@ -58,11 +59,12 @@ PyObject *pyi_conn_getip(PyObject *self, PyObject *args);
 PyObject *pyi_conn_getport(PyObject *self, PyObject *args);
 PyObject *gs_conn_setentity(PyObject *self, PyObject *args);
 PyObject *pyi_conn_disconnect(PyObject *self, PyObject *args);
+PyObject *gs_conn_addentity(PyObject *self, PyObject *args);
 PyObject *pyi_cmdhndlr_registercmds(PyObject *self, PyObject *args);
-
 
 static PyMethodDef GameserverMethods[] = {
      {"SetConnectionHandler", gs_conn_setconnhandler, METH_O, "Sets the connection handler"},
+     {"AddEntity", gs_conn_addentity, METH_VARARGS, "Sets the connection handler"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
@@ -83,7 +85,7 @@ PyMethodDef conn_methods[] = {
                                     "Gets a connections source port"},
                                     {"Disconnect", pyi_conn_disconnect, METH_VARARGS, "Disconnects a client"},
                                     {"SendMessage",  gs_conn_sendmsg, METH_VARARGS, "Sends a console message"},
-                                    {"SetEntity",  gs_conn_setentity, METH_VARARGS, "Sends a console message"},
+                                    {"SetEntity",  gs_conn_setentity, METH_VARARGS, "Registers an entity to a connection"},
                                     {NULL, NULL, 0, NULL}};
 
 PyMethodDef cmdhandler_methods[] = {
@@ -108,6 +110,7 @@ PyObject *gs_conn_sendmsg(PyObject *self, PyObject *args)
 PyObject *gs_conn_setconnhandler(PyObject *self, PyObject *args)
 {
 	gbl_pi_interface->mp_connection_handler = (PyTypeObject *)args;
+    Py_INCREF(gbl_pi_interface->mp_connection_handler);
     Py_RETURN_NONE;
 }
 
@@ -166,6 +169,19 @@ PyObject *pyi_cmdhndlr_registercmds(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;  
 }
 
+
+PyObject *gs_conn_addentity(PyObject *self, PyObject *args) {
+    ClientInfoTable *tbl;
+    PyObject* obj;
+    if (!PyArg_ParseTuple(args, "O", &obj))
+        Py_RETURN_NONE;
+
+    tbl = gbl_pi_interface->findClientByEntity((PyObject *)obj);
+    printf("Got tbl: %p\n", tbl);
+    SAMPDriver *driver = gbl_pi_interface->getGameServer()->getSAMPDriver();
+    driver->AddBot(tbl->bot_user);
+    Py_RETURN_NONE;
+}
 
 
 

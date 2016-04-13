@@ -8,10 +8,18 @@ import SAMP
 class GenericEntity(CoreServer.BaseEntity):
 	def __init__(self):
 		print("base entity")
+		self.IsBot = False
 
 class BotEntity(GenericEntity):
 	def __init__(self):
 		super(BotEntity, self).__init__()
+		self.IsBot = True
+		self.Name = "TheBot"
+		self.Model = 111
+		self.Health = 11.0
+		self.Position = [1529.6,-1691.2,13.3]
+		self.World = 0
+		self.Stream_Index = 0
 		print("New bot entering server!")
 
 class PlayerEntity(GenericEntity):
@@ -32,6 +40,10 @@ class PlayerEntity(GenericEntity):
 class SAMP3DTextEntity(GenericEntity):
 	def __init__(self):
 		print("asdasd")
+
+class VehicleEntity(GenericEntity):
+	def __init__(self):
+		print("new veh entity")	
 
 class PickupEntity(GenericEntity):
 	def __init__(self):
@@ -88,11 +100,12 @@ def pickup_event(pickup_entity, player_entity):
 CoreServer.SetConnectionHandler(SAMPHandler)
 SAMP.SetPickupEntity(PickupEntity)
 SAMP.Set3DTextLabelEntity(SAMP3DTextEntity)
+SAMP.SetVehicleEntity(VehicleEntity)
 #SAMP.CreatePickup({'model': 1222, 'position': [1529.6,-1691.2,13.3], 'pickup_type': 1, 'world': 0, 'stream_index': 0, 'pickup_event': pickup_event})
 #SAMP.Create3DTextLabel({'text': 'Some text','position': [1529.6,-1691.2,15.3],'colour': 0xFFFFFFFF, 'world': 0, 'stream_index': 0});
 #SAMP.CreateVehicle({'model':411, 'position': [1529.6,-1691.2,13.3], 'world': 0, 'stream_index': 0, 'colour': [1,0]})
 
-#the_bot = BotEntity()
-#CoreServer.AddEntity(the_bot, {'world': 0,'stream_index': 0, 'position': [1529.6,-1691.2,13.3], 'model': 122 })
+the_bot = BotEntity()
+CoreServer.AddEntity(the_bot)
 
 #the_bot.RemoveEntity(the_bot)
