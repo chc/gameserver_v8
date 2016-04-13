@@ -5,6 +5,7 @@
 #include <buffwriter.h>
 
 #include "SAMPRakPeer.h"
+#include "SAMPPlayer.h"
 
 #define SAMP_MAX_PLAYERS 5
 
@@ -64,15 +65,14 @@ void SAMPDriver::StreamUpdate(SAMPRakPeer *peer) {
 	while(it != m_connections.end()) {
 		SAMPRakPeer *user = *it;
 		if(user != peer) {
-			peer->PlayerStreamCheck(user);
+			peer->PlayerStreamCheck(user->GetPlayer());
 		}
 		it++;
 	}
-
-	std::vector<SAMPBotUser *>::iterator itb = m_bots.begin();
+	std::vector<SAMPPlayer *>::iterator itb = m_bots.begin();
 	while(itb != m_bots.end()) {
-		SAMPBotUser *user = *itb;
-		peer->BotStreamCheck(user);
+		SAMPPlayer *user = *itb;
+		peer->PlayerStreamCheck(user);
 		itb++;
 	}
 }
@@ -117,7 +117,6 @@ void SAMPDriver::tick() {
 	
 
 	if(header->magic != SAMP_MAGIC) {
-		//, &si_other
 		SAMPRakPeer *mp_samprak = find_or_create(&si_other);
 		mp_samprak->handle_packet((char *)&recvbuf, len);
 	} else {
@@ -414,13 +413,13 @@ void SAMPDriver::SendRPCToAll(int rpc_id, RakNet::BitStream *bs) {
 		it++;
 	}
 }
-SAMPBotUser* SAMPDriver::CreateBot() {
-	SAMPBotUser *bot = (SAMPBotUser *)malloc(sizeof(SAMPBotUser));
-	memset(bot, 0, sizeof(SAMPBotUser));
-	bot->playerid = 666;
-	return bot;
+SAMPPlayer* SAMPDriver::CreateBot() {
+	SAMPPlayer *player = new SAMPPlayer(this); 
+	player->SetPlayerID(666);
+	return player;
 }
-void SAMPDriver::AddBot(SAMPBotUser *bot) {
+void SAMPDriver::AddBot(SAMPPlayer *bot) {
+	printf("Add bot\n");
 	m_bots.push_back(bot);
 }
 void SAMPDriver::SendScoreboard(SAMPRakPeer *peer) {
@@ -428,15 +427,25 @@ void SAMPDriver::SendScoreboard(SAMPRakPeer *peer) {
 	while(it != m_connections.end()) {
 		SAMPRakPeer *user = *it;
 		if(user != peer) {
-			peer->AddToScoreboard(user);
+			peer->AddToScoreboard(user->GetPlayer());
 		}
 		it++;
 	}
 
-	std::vector<SAMPBotUser *>::iterator itb = m_bots.begin();
+	std::vector<SAMPPlayer *>::iterator itb = m_bots.begin();
 	while(itb != m_bots.end()) {
-		SAMPBotUser *user = *itb;
+		SAMPPlayer *user = *itb;
 		peer->AddToScoreboard(user);
 		itb++;
+	}
+}
+void SAMPDriver::SendRPCToStreamed(SAMPPlayer *player, uint8_t rpc, RakNet::BitStream *stream) {
+	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
+	while(it != m_connections.end()) {
+		SAMPRakPeer *peer = *it;
+		if(peer->IsPlayerStreamed(player)) {
+			peer->send_rpc(rpc, stream);
+		}
+		it++;
 	}
 }

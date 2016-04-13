@@ -7,6 +7,7 @@
 #include <RakNet/StringCompressor.h>
 #include <RakNet/GetTime.h>
 class SAMPDriver;
+class SAMPPlayer;
 
 typedef struct _NEW_VEHICLE {
     uint16_t VehicleId;
@@ -119,7 +120,6 @@ typedef struct {
 	void (SAMPRakPeer::*handler)(RakNet::BitStream *stream);
 } RPCHandler;
 
-#define MAX_SAMP_NAME 24
 #define SAMP_COOKIE_KEY 0x6969
 
 typedef struct {
@@ -145,36 +145,25 @@ public:
 	void send_rpc(uint8_t rpc, RakNet::BitStream *stream);
 	void send_bitstream(RakNet::BitStream *stream);
 
+
+
 	void StreamInCar(SAMPVehicle *car);
 	void StreamOutCar(SAMPVehicle *car);
-	void StreamInBot(SAMPBotUser *car);
-	void StreamOutBot(SAMPBotUser *car);
-	void StreamInPlayer(SAMPRakPeer *car);
-	void StreamOutPlayer(SAMPRakPeer *car);
 
 	void VehicleStreamCheck(SAMPVehicle *car);
 	bool VehicleInStreamRange(SAMPVehicle *car);
-
-	void PlayerStreamCheck(SAMPRakPeer *car);
-	bool PlayerInStreamRange(SAMPRakPeer *car);
-
-	void BotStreamCheck(SAMPBotUser *car);
-	bool BotInStreamRange(SAMPBotUser *car);
-
 	bool IsVehicleStreamed(SAMPVehicle *car);
-	bool IsPlayerStreamed(SAMPRakPeer *car);
-	bool IsBotStreamed(SAMPBotUser *car);
-
-	void AddToScoreboard(SAMPBotUser *bot);
-	void AddToScoreboard(SAMPRakPeer *peer);
 
 
-	float GetHealth()  { return m_health; };
-	float GetArmour()  { return m_armour; };
-	int   GetModelID() {  return m_model_id; };
-	float *GetPosition() { return (float *)&m_pos;}
+	void StreamInPlayer(SAMPPlayer *player);
+	void StreamOutPlayer(SAMPPlayer *player);
+	
+	bool IsPlayerStreamed(SAMPPlayer *car);
+	void PlayerStreamCheck(SAMPPlayer *car);
+	bool PlayerInStreamRange(SAMPPlayer *car);
 
-	void SetName(const char *name);
+	void AddToScoreboard(SAMPPlayer *bot);
+	SAMPPlayer *GetPlayer() { return mp_player; };
 private:
 	void handle_raknet_packet(char *data, int len);
 	void process_bitstream(RakNet::BitStream *stream);
@@ -208,7 +197,6 @@ private:
 
 	std::vector<SAMPStreamRecord> m_streamed_vehicles;
 	std::vector<SAMPStreamRecord> m_streamed_players;
-	std::vector<SAMPStreamRecord> m_streamed_bots;
 	std::vector<SAMPStreamRecord> m_streamed_textlabels;
 	std::vector<SAMPStreamRecord> m_streamed_pickups;
 
@@ -217,6 +205,7 @@ private:
 	void m_client_join_handler(RakNet::BitStream *stream);
 	void m_client_command_handler(RakNet::BitStream *stream);
 	void m_client_dialogresp_handler(RakNet::BitStream *stream);
+	void m_client_spawned_handler(RakNet::BitStream *stream) ;
 
 	//Misc RPC stuff
 	void send_game_init();
@@ -224,18 +213,7 @@ private:
 
 	void send_fake_players();
 
-	//samp specific vars
-	float m_health;
-	float m_armour;
-	uint8_t m_team;
-	char m_name[MAX_SAMP_NAME+1];
-	char m_rot_z; //replace with quat??
-	char m_pos[3];
-	uint32_t m_model_id;
-	uint32_t m_colour;
-	uint8_t m_fightstyle;
-
-	bool m_spawned;
+	SAMPPlayer *mp_player;
 	
 };
 #endif //_SAMPRAKPEER_H

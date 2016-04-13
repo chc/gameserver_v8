@@ -1,5 +1,6 @@
 #include "../PythonInterface.h"
 #include "../SAMP/SAMPRakPeer.h"
+#include "../SAMP/SAMPPlayer.h"
 #include <structmember.h>
 
 PyObject *pyi_baseentity_spawn(gs_BaseEntityObject *self, PyObject *args);
@@ -76,11 +77,11 @@ PyObject *Entity_gethp(gs_BaseEntityObject *self, void *closure)
 {
 	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(self->connection);
 	if(tbl) {
- 		return PyLong_FromLong(tbl->user->GetHealth());
+ 		return PyLong_FromLong(tbl->user->GetPlayer()->GetHealth());
 	} else {
 		tbl = gbl_pi_interface->findClientByEntity((PyObject *)self, true, true);
 		if(tbl)
-			return PyFloat_FromDouble(tbl->bot_user->health);
+			return PyFloat_FromDouble(tbl->bot_user->GetHealth());
 	}
     return PyLong_FromLong(0);
 }
@@ -89,11 +90,11 @@ int Entity_sethp(gs_BaseEntityObject *self, PyObject *value, void *closure)
 {
 	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(self->connection);
 	if(tbl) {
-		tbl->user->SetHealth(PyFloat_AsDouble(value));
+		tbl->user->GetPlayer()->SetHealth(PyFloat_AsDouble(value));
 	} else {
 		tbl = gbl_pi_interface->findClientByEntity((PyObject *)self, true, true);
 		if(tbl) {
-			tbl->bot_user->health = PyFloat_AsDouble(value);
+			tbl->bot_user->SetHealth(PyFloat_AsDouble(value));
 		}
 	}
 	return 0;
@@ -103,11 +104,11 @@ PyObject *Entity_getarmour(gs_BaseEntityObject *self, void *closure)
 {
 	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(self->connection);
 	if(tbl) {
- 		return PyLong_FromLong(tbl->user->GetArmour());
+ 		return PyLong_FromLong(tbl->user->GetPlayer()->GetArmour());
 	} else {
 		tbl = gbl_pi_interface->findClientByEntity((PyObject *)self, true, true);
 		if(tbl)
-			return PyFloat_FromDouble(tbl->bot_user->armour);
+			return PyFloat_FromDouble(tbl->bot_user->GetArmour());
 	}
     return PyLong_FromLong(0);
 }
@@ -117,12 +118,12 @@ int Entity_setarmour(gs_BaseEntityObject *self, PyObject *value, void *closure)
 	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(self->connection);
 	if(tbl) {
 		if(tbl->user) {
-			tbl->user->SetArmour(PyFloat_AsDouble(value));
+			tbl->user->GetPlayer()->SetArmour(PyFloat_AsDouble(value));
 		}
 	} else {
 		tbl = gbl_pi_interface->findClientByEntity((PyObject *)self);
 		if(tbl) {
-			tbl->bot_user->health = PyFloat_AsDouble(value);
+			tbl->bot_user->SetArmour(PyFloat_AsDouble(value));
 		}
 	}
 	return 0;
@@ -132,11 +133,11 @@ PyObject *Entity_getmodel(gs_BaseEntityObject *self, void *closure)
 {
 	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(self->connection);
 	if(tbl) {
- 		return PyLong_FromLong(tbl->user->GetModelID());
+ 		return PyLong_FromLong(tbl->user->GetPlayer()->GetModelID());
 	} else {
 		tbl = gbl_pi_interface->findClientByEntity((PyObject *)self, true, true);
 		if(tbl)
-			return PyFloat_FromDouble(tbl->bot_user->modelid);
+			return PyFloat_FromDouble(tbl->bot_user->GetModelID());
 	}
     return PyLong_FromLong(100);
 }
@@ -145,11 +146,11 @@ int Entity_setmodel(gs_BaseEntityObject *self, PyObject *value, void *closure)
 {
 	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(self->connection);
 	if(tbl) {
-		tbl->user->SetSkin(PyLong_AsLong(value));
+		tbl->user->GetPlayer()->SetModelID(PyLong_AsLong(value));
 	} else {
 		tbl = gbl_pi_interface->findClientByEntity((PyObject *)self, true, true);
 		if(tbl) {
-			tbl->bot_user->modelid = PyLong_AsLong(value);
+			tbl->bot_user->SetModelID(PyLong_AsLong(value));
 		}	
 	}
 	return 0;
@@ -165,7 +166,7 @@ PyObject *Entity_getpos(gs_BaseEntityObject *self, void *closure)
 	if(tbl) {
 		Py_INCREF(list);
 		if(tbl) {
-			pos = tbl->user->GetPosition();
+			pos = tbl->user->GetPlayer()->GetPosition();
 			PyList_SET_ITEM(list, 0, PyFloat_FromDouble(pos[0]));
 			PyList_SET_ITEM(list, 1, PyFloat_FromDouble(pos[1]));
 			PyList_SET_ITEM(list, 2, PyFloat_FromDouble(pos[2]));
@@ -175,7 +176,7 @@ PyObject *Entity_getpos(gs_BaseEntityObject *self, void *closure)
 	} else {
 		tbl = gbl_pi_interface->findClientByEntity((PyObject *)self, true, true);
 		if(tbl) {
-			pos = (float *)&tbl->bot_user->pos;
+			pos = (float *)tbl->bot_user->GetPosition();
 			PyList_SET_ITEM(list, 0, PyFloat_FromDouble(pos[0]));
 			PyList_SET_ITEM(list, 1, PyFloat_FromDouble(pos[1]));
 			PyList_SET_ITEM(list, 2, PyFloat_FromDouble(pos[2]));
@@ -189,24 +190,22 @@ PyObject *Entity_getpos(gs_BaseEntityObject *self, void *closure)
 int Entity_setpos(gs_BaseEntityObject *self, PyObject *value, void *closure)
 {
 	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(self->connection);
-	float x,y,z;
+	float pos[3];
 	if(PyList_Check(value)) {		
 		PyObject *seq = PySequence_Fast(value, "expected a sequence");
 		PyObject *pyx = PyList_GET_ITEM(seq, 0);
 		PyObject *pyy = PyList_GET_ITEM(seq, 1);
 		PyObject *pyz = PyList_GET_ITEM(seq, 2);
-		x = PyFloat_AsDouble(pyx);
-		y = PyFloat_AsDouble(pyy);
-		z = PyFloat_AsDouble(pyz);
+		pos[0] = PyFloat_AsDouble(pyx);
+		pos[1] = PyFloat_AsDouble(pyy);
+		pos[2] = PyFloat_AsDouble(pyz);
 	}
 	if(tbl) {
-			tbl->user->SetPosition(x,y,z);
+			tbl->user->GetPlayer()->SetPosition((float *)&pos);
 	} else {
 		tbl = gbl_pi_interface->findClientByEntity((PyObject *)self, true, true);
 		if(tbl) {
-			tbl->bot_user->pos[0] = x;
-			tbl->bot_user->pos[1] = y;
-			tbl->bot_user->pos[2] = z;
+			tbl->bot_user->SetPosition((float *)&pos);
 		}
 	}
 	return 0;
@@ -246,11 +245,11 @@ int Entity_setname(gs_BaseEntityObject *self, PyObject *value, void *closure) {
 	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(self->connection);
 	if(PyBytes_Check(bstr)) {
 		if(tbl) {
-			tbl->user->SetName(PyBytes_AsString(bstr));
+			tbl->user->GetPlayer()->SetName(PyBytes_AsString(bstr));
 		} else {
 			tbl = gbl_pi_interface->findClientByEntity((PyObject *)self, true, true);
 			if(tbl) {
-				strcpy(tbl->bot_user->name, PyBytes_AsString(bstr));
+				tbl->bot_user->SetName(PyBytes_AsString(bstr));
 			}
 		}
 	}

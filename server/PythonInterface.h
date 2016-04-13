@@ -19,7 +19,7 @@ typedef struct {
 	SAMPRakPeer *user;
 	PyObject* connection_object;
 	PyObject* entity;
-	SAMPBotUser *bot_user;
+	SAMPPlayer *bot_user;
 	PyObject* last_dialog_callback;
 	std::vector<ScriptCommand *> registered_commands; //curently 1 allocated per cmd per user... make globally shared
 } ClientInfoTable;

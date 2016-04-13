@@ -16,6 +16,7 @@
 #include <RakNet/GetTime.h>
 
 class SAMPRakPeer;
+class SAMPPlayer;
 
 #define SAMP_MAGIC 0x504d4153
 
@@ -28,6 +29,7 @@ enum ESAMPRPC {
 	ESAMPRPC_PlayerDeath = 166,
 	ESAMPRPC_Create3DTextLabel = 36,
 	ESAMPRPC_ClientCommand = 50,
+	ESAMPRPC_ClientSpawned = 52,
 	ESAMPRPC_Delete3DTextLabel = 58,
 	ESAMPRPC_DialogResponse = 62,
 	ESAMPRPC_DestroyPickup = 63,
@@ -108,19 +110,6 @@ typedef struct {
 	uint8_t	  	paintjob;
 } SAMPVehicle;
 
-typedef struct {
-	float health;
-	float armour;
-	uint16_t playerid;
-	uint8_t team;
-	char name[24];
-	bool is_npc;
-	float pos[3];
-	float zrot;
-	uint32_t modelid;
-	uint32_t colour;
-	uint8_t fightstyle;
-} SAMPBotUser;
 
 class SAMPDriver : public INetDriver {
 public:
@@ -146,11 +135,12 @@ public:
 
 	void StreamUpdate(SAMPRakPeer *peer);
 
-	SAMPBotUser* CreateBot();
-	void AddBot(SAMPBotUser *bot);
+	SAMPPlayer* CreateBot();
+	void AddBot(SAMPPlayer *bot);
 
 	void SendScoreboard(SAMPRakPeer *peer);
-	void SendScoreboard(SAMPBotUser *peer);
+
+	void SendRPCToStreamed(SAMPPlayer *player, uint8_t rpc, RakNet::BitStream *stream);
 private:
 
 	//samp query stuff
@@ -170,7 +160,7 @@ private:
 	uint16_t m_port;
 	int m_sd;
 	std::vector<SAMPRakPeer *> m_connections;
-	std::vector<SAMPBotUser *> m_bots;
+	std::vector<SAMPPlayer *> m_bots;
 	struct sockaddr_in m_local_addr;
 
 	struct timeval m_server_start;
