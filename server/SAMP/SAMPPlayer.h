@@ -29,11 +29,11 @@ public:
 	~SAMPPlayer();
 
 	float GetHealth() { return m_health; };
-	void SetHealth(float h);
+	void SetHealth(float h, bool stream = false);
 	float GetArmour() { return m_armour; };
-	void SetArmour(float a);
+	void SetArmour(float a, bool stream = false);
 	float *GetPosition() { return (float *)&m_pos; };
-	void SetPosition(float *p);
+	void SetPosition(float *p, bool stream = false);
 	uint32_t GetModelID() { return m_model_id; };
 	void SetModelID(uint32_t modelid);
 	uint32_t GetNametagColour() { return m_nametag_colour; };

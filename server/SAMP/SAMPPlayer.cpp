@@ -7,6 +7,8 @@ SAMPPlayer::SAMPPlayer(SAMPDriver *driver) {
 	m_is_npc = false;
 	m_fightstyle = 0;
 	m_nametag_colour = 0;
+	m_health = 100.0;
+	m_armour = 0.0;
 }
 SAMPPlayer::SAMPPlayer(SAMPRakPeer *peer, SAMPDriver *driver) {
 	mp_samp_peer = peer;
@@ -15,36 +17,40 @@ SAMPPlayer::SAMPPlayer(SAMPRakPeer *peer, SAMPDriver *driver) {
 	m_is_npc = false;
 	m_fightstyle = 0;
 	m_nametag_colour = 0;
+	m_health = 100.0;
+	m_armour = 0.0;
 }
 SAMPPlayer::~SAMPPlayer() {
 
 }
 
-void SAMPPlayer::SetHealth(float h) {
-	RakNet::BitStream bsData;
-	bsData.Write(h);
-	if(mp_samp_peer)
-	mp_driver->SendRPCToStreamed(this, ESAMPRPC_SetPlayerHealth, &bsData);
-
+void SAMPPlayer::SetHealth(float h, bool stream) {
+	if(mp_samp_peer && stream) {
+		RakNet::BitStream bsData;
+		bsData.Write(h);	
+		mp_driver->SendRPCToStreamed(this, ESAMPRPC_SetPlayerHealth, &bsData);
+	}
 	m_health = h;
 }
-void SAMPPlayer::SetArmour(float a) {
-	RakNet::BitStream bsData;
-	bsData.Write(a);
-	mp_driver->SendRPCToStreamed(this, ESAMPRPC_SetPlayerArmour, &bsData);
-
+void SAMPPlayer::SetArmour(float a, bool stream) {
+	if(mp_samp_peer && stream) {
+		RakNet::BitStream bsData;
+		bsData.Write(a);
+		mp_samp_peer->send_rpc(ESAMPRPC_SetPlayerArmour, &bsData);
+	}
 	m_armour = a;
 }
-void SAMPPlayer::SetPosition(float *p) {
-	RakNet::BitStream bsData;
-	bsData.Write(p[0]);
-	bsData.Write(p[1]);
-	bsData.Write(p[2]);
-
+void SAMPPlayer::SetPosition(float *p, bool stream) {
+	if(mp_samp_peer && stream) {
+		RakNet::BitStream bsData;
+		bsData.Write(p[0]);
+		bsData.Write(p[1]);
+		bsData.Write(p[2]);
+		mp_samp_peer->send_rpc(ESAMPRPC_SetPlayerPos, &bsData);
+	}
 	m_pos[0] = p[0];
 	m_pos[1] = p[1];
 	m_pos[2] = p[2];
-	mp_driver->SendRPCToStreamed(this, ESAMPRPC_SetPlayerPos, &bsData);
 }
 void SAMPPlayer::SetModelID(uint32_t modelid) {
 	RakNet::BitStream bsData;

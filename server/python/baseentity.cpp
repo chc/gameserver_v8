@@ -90,11 +90,11 @@ int Entity_sethp(gs_BaseEntityObject *self, PyObject *value, void *closure)
 {
 	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(self->connection);
 	if(tbl) {
-		tbl->user->GetPlayer()->SetHealth(PyFloat_AsDouble(value));
+		tbl->user->GetPlayer()->SetHealth(PyFloat_AsDouble(value), true);
 	} else {
 		tbl = gbl_pi_interface->findClientByEntity((PyObject *)self, true, true);
 		if(tbl) {
-			tbl->bot_user->SetHealth(PyFloat_AsDouble(value));
+			tbl->bot_user->SetHealth(PyFloat_AsDouble(value), true);
 		}
 	}
 	return 0;
@@ -118,12 +118,12 @@ int Entity_setarmour(gs_BaseEntityObject *self, PyObject *value, void *closure)
 	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(self->connection);
 	if(tbl) {
 		if(tbl->user) {
-			tbl->user->GetPlayer()->SetArmour(PyFloat_AsDouble(value));
+			tbl->user->GetPlayer()->SetArmour(PyFloat_AsDouble(value), true);
 		}
 	} else {
 		tbl = gbl_pi_interface->findClientByEntity((PyObject *)self);
 		if(tbl) {
-			tbl->bot_user->SetArmour(PyFloat_AsDouble(value));
+			tbl->bot_user->SetArmour(PyFloat_AsDouble(value), true);
 		}
 	}
 	return 0;
