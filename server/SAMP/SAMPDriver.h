@@ -141,6 +141,16 @@ public:
 	void SendScoreboard(SAMPRakPeer *peer);
 
 	void SendRPCToStreamed(SAMPPlayer *player, uint8_t rpc, RakNet::BitStream *stream);
+	void SendBitstreamToStreamed(SAMPPlayer *player, RakNet::BitStream *stream);
+
+	void SendRPCToAll(uint8_t rpc, RakNet::BitStream *stream);
+
+	void SendPlayerUpdate(SAMPPlayer *player);
+
+	void SendAddPlayerToScoreboard(SAMPPlayer *player);
+
+	SAMPPlayer *findPlayerByID(uint16_t id);
+	uint16_t GetFreePlayerID();
 private:
 
 	//samp query stuff

@@ -30,13 +30,13 @@ SAMPRakPeer::SAMPRakPeer(SAMPDriver *driver, struct sockaddr_in *address_info) {
 	m_state = ESAMPConnectionState_ConnectionRequest;
 	m_cookie_challenge = 0x1111;
 	m_packet_sequence = 0;
-	m_player_id = 0;
 	m_got_client_join = false;
 	memcpy(&m_address_info,address_info, sizeof(m_address_info));
     StringCompressor::AddReference();
 
     m_vehicle_stream_distance = 1000.0;
     mp_player = new SAMPPlayer(this, mp_driver);
+    mp_player->SetPlayerID(mp_driver->GetFreePlayerID());
 }
 SAMPRakPeer::~SAMPRakPeer() {
 	delete mp_player;
@@ -203,7 +203,77 @@ void SAMPRakPeer::process_bitstream(RakNet::BitStream *stream) {
 		case ID_NEW_INCOMING_CONNECTION:
 		//printf("New connection");
 		break;
+		case ID_PLAYER_SYNC:
+
+		uint16_t leftright_keys;
+		uint16_t updown_keys;
+		uint16_t keys;
+		float pos[3];
+		float quat[4];
+		uint8_t health;
+		uint8_t armour;
+		uint8_t weapon;
+		uint8_t specialaction;
+		float movespeed[3];
+		float surfoffset[3];
+		uint16_t surfinfo;
+		uint32_t anim;
+		stream->Read(leftright_keys);
+		stream->Read(updown_keys);
+		stream->Read(keys);
+		stream->Read(pos[0]);
+		stream->Read(pos[1]);
+		stream->Read(pos[2]);
+		stream->Read(quat[0]);
+		stream->Read(quat[1]);
+		stream->Read(quat[2]);
+		stream->Read(quat[3]);
+		stream->Read(health);
+		stream->Read(armour);
+		stream->Read(weapon);
+		stream->Read(specialaction);
+		stream->Read(movespeed[0]);
+		stream->Read(movespeed[1]);
+		stream->Read(movespeed[2]);
+		stream->Read(surfoffset[0]);
+		stream->Read(surfoffset[1]);
+		stream->Read(surfoffset[2]);
+		stream->Read(surfinfo);
+		stream->Read(anim);
+
+		if(mp_player) {
+			mp_player->SetPosition((float *)&pos);
+			mp_player->SetQuat((float *)&quat);
+			mp_player->SetHealth((float)health);
+			mp_player->SetArmour((float)armour);
+			mp_player->SetAnim(anim);
+			mp_player->SetMoveSpeed((float *)&movespeed);
+			mp_player->SetHoldingWeapon(weapon);
+			mp_player->SetSurfFlags(surfinfo);
+			mp_player->SetSurfOffset((float *)&surfoffset);
+			mp_player->SetSpecialAction(specialaction);
+			mp_player->SetKeys(leftright_keys, updown_keys, keys);
+			mp_driver->SendPlayerUpdate(mp_player);
+		}
+		
+		//printf("Player sync: pos(%f,%f,%f) : %d %d (%f,%f,%f) : %d\n",pos[0],pos[1],pos[2],health,armour,movespeed[0],movespeed[1],movespeed[2], mp_player->GetPlayerID());
+		break;
 	}
+	/*
+		ID_PLAYER_SYNC = 207,
+	ID_MARKERS_SYNC = 208,
+	ID_UNOCCUPIED_SYNC = 209,
+	ID_TRAILER_SYNC = 210,
+	ID_PASSENGER_SYNC = 211,
+	ID_SPECTATOR_SYNC = 212,
+	ID_AIM_SYNC = 203,
+	ID_VEHICLE_SYNC = 200,
+	ID_RCON_COMMAND = 201,
+	ID_RCON_RESPONCE = 202,
+	ID_WEAPONS_UPDATE = 204,
+	ID_STATS_UPDATE = 205,
+	ID_BULLET_SYNC = 206,
+	*/
 }
 void SAMPRakPeer::find_rpc_handler_by_id(uint8_t id) {
 
@@ -224,7 +294,6 @@ void SAMPRakPeer::handle_incoming_rpc(RakNet::BitStream *stream) {
 
 	for(int i=0;i<sizeof(s_rpc_handler)/sizeof(RPCHandler);i++) {
 		if(s_rpc_handler[i].id == rpcid) {
-			printf("Jumping to: %p\n", s_rpc_handler[i].handler);
 			(*this.*s_rpc_handler[i].handler)(&bs);
 			return;
 		}
@@ -238,7 +307,7 @@ void SAMPRakPeer::send_connection_accepted(bool success) {
 	bs.Write((uint32_t)(m_address_info.sin_addr.s_addr));
 	bs.Write((uint16_t)htons(m_address_info.sin_port));
 	uint32_t challenge = 0x62B44F34;
-	bs.Write(m_player_id);
+	bs.Write(mp_player->GetPlayerID());
 	bs.Write(challenge);
 	send_bitstream(&bs);
 }
@@ -364,6 +433,9 @@ void SAMPRakPeer::m_client_join_handler(RakNet::BitStream *stream) {
 
 	printf("Name: %s\nGPCI: %s\nVersion: %s\n",name,auth,version);
 
+	mp_player->SetName(name);
+	mp_driver->SendScoreboard(this);
+	mp_driver->SendAddPlayerToScoreboard(this->GetPlayer());
 	if(!m_got_client_join) {
 
 		send_player_update();
@@ -464,6 +536,10 @@ void SAMPRakPeer::SpawnPlayer(float x, float y, float z, int skin, int team) {
 	psInfo.vecPos[1] = y;
 	psInfo.vecPos[2] = z;
 
+	mp_player->SetModelID(skin);
+	mp_player->SetTeam(team);
+	mp_player->SetSpawned(true);
+
 	bsData.Write((uint8_t)1); //maybe the id or something
 	bsData.Write((char *)&psInfo, sizeof(psInfo));
 	send_rpc(ESAMPRPC_RequestClass, &bsData);
@@ -477,29 +553,6 @@ void SAMPRakPeer::SpawnPlayer(float x, float y, float z, int skin, int team) {
 	CHCGameServer *server = (CHCGameServer *)mp_driver->getServer();
 	server->GetScriptInterface()->HandleEvent(CHCGS_EnterWorld, this, NULL);
 
-}
-void SAMPRakPeer::SetHealth(float hp) {
-	RakNet::BitStream bsData;
-	bsData.Write(hp);
-	send_rpc(ESAMPRPC_SetPlayerHealth, &bsData);
-}
-void SAMPRakPeer::SetArmour(float hp) {
-	RakNet::BitStream bsData;
-	bsData.Write(hp);
-	send_rpc(ESAMPRPC_SetPlayerArmour, &bsData);
-}
-void SAMPRakPeer::SetSkin(int skinid) {
-	RakNet::BitStream bsData;
-	bsData.Write((uint32_t)m_player_id);
-	bsData.Write((uint32_t)skinid);
-	send_rpc(ESAMPRPC_SetPlayerSkin, &bsData);
-}
-void SAMPRakPeer::SetPosition(float x,float y,float z) {
-	RakNet::BitStream bsData;
-	bsData.Write(x);
-	bsData.Write(y);
-	bsData.Write(z);
-	send_rpc(ESAMPRPC_SetPlayerPos, &bsData);
 }
 void SAMPRakPeer::ShowPlayerDialog(int dialogid, int type, const char *title, const char *msg, const char *b1, const char *b2) {
 	RakNet::BitStream bs;
@@ -550,7 +603,7 @@ void SAMPRakPeer::send_game_init() {
 	os.WriteCompressed(true); //nametag LOS
 	os.WriteCompressed(false); //manual vehicle lighting
 	os.Write((uint32_t)1); //"spawns available??"
-	os.Write(m_player_id);
+	os.Write(GetPlayer()->GetPlayerID());
 	os.WriteCompressed(true); //show nametags
 	os.Write((uint32_t)0); //show player markers
 	os.Write((uint8_t)12); //server hour
@@ -582,8 +635,6 @@ void SAMPRakPeer::send_game_init() {
 		os.Write((uint8_t)1);
 	}
 	send_rpc(139, &os);
-
-	mp_driver->SendScoreboard(this);
 }
 void SAMPRakPeer::StreamInCar(SAMPVehicle *car) {
 	RakNet::BitStream bsData;
@@ -670,6 +721,8 @@ void SAMPRakPeer::VehicleStreamCheck(SAMPVehicle *car) {
 	}
 }
 void SAMPRakPeer::PlayerStreamCheck(SAMPPlayer *car) {
+	if(!mp_player || !mp_player->GetSpawned() || !car->GetSpawned())
+		return;
 	bool is_streamed = IsPlayerStreamed(car);
 	if(!is_streamed) {
 		if(PlayerInStreamRange(car)) {
@@ -687,11 +740,15 @@ bool SAMPRakPeer::PlayerInStreamRange(SAMPPlayer *car) {
 }
 
 void SAMPRakPeer::StreamInPlayer(SAMPPlayer *car) {
+	if(car == mp_player || !car->GetSpawned() || !mp_player->GetSpawned()) 
+		return;
 	RakNet::BitStream bsData;
 	float *pos = car->GetPosition();
 	bsData.Write((uint16_t)car->GetPlayerID());
 	bsData.Write((uint8_t)car->GetTeam());
 	bsData.Write((uint32_t)car->GetModelID());
+
+	printf("Stream in: %p - %d - %d\n", car, car->GetPlayerID(), car->GetModelID());
 	bsData.Write((float)pos[0]);
 	bsData.Write((float)pos[1]);
 	bsData.Write((float)pos[2]);

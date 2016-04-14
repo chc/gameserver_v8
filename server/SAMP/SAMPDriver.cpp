@@ -1,5 +1,6 @@
 #include "SAMPDriver.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <server/CHCGameServer.h>
 #include <buffwriter.h>
@@ -55,6 +56,8 @@ void SAMPDriver::think() {
 	}
 }
 void SAMPDriver::StreamUpdate(SAMPRakPeer *peer) {
+	if(!peer->GetPlayer() || !peer->GetPlayer()->GetSpawned())
+		return;
 	std::vector<SAMPVehicle *>::iterator itv = m_vehicles.begin();
 	while(itv != m_vehicles.end()) {
 		SAMPVehicle *veh = *itv;
@@ -64,7 +67,7 @@ void SAMPDriver::StreamUpdate(SAMPRakPeer *peer) {
 	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
 	while(it != m_connections.end()) {
 		SAMPRakPeer *user = *it;
-		if(user != peer) {
+		if(user != peer && user->GetPlayer() && user->GetPlayer()->GetSpawned()) {
 			peer->PlayerStreamCheck(user->GetPlayer());
 		}
 		it++;
@@ -72,7 +75,8 @@ void SAMPDriver::StreamUpdate(SAMPRakPeer *peer) {
 	std::vector<SAMPPlayer *>::iterator itb = m_bots.begin();
 	while(itb != m_bots.end()) {
 		SAMPPlayer *user = *itb;
-		peer->PlayerStreamCheck(user);
+		if(user->GetSpawned())
+			peer->PlayerStreamCheck(user);
 		itb++;
 	}
 }
@@ -415,11 +419,10 @@ void SAMPDriver::SendRPCToAll(int rpc_id, RakNet::BitStream *bs) {
 }
 SAMPPlayer* SAMPDriver::CreateBot() {
 	SAMPPlayer *player = new SAMPPlayer(this); 
-	player->SetPlayerID(666);
+	player->SetPlayerID(1);
 	return player;
 }
 void SAMPDriver::AddBot(SAMPPlayer *bot) {
-	printf("Add bot\n");
 	m_bots.push_back(bot);
 }
 void SAMPDriver::SendScoreboard(SAMPRakPeer *peer) {
@@ -448,4 +451,125 @@ void SAMPDriver::SendRPCToStreamed(SAMPPlayer *player, uint8_t rpc, RakNet::BitS
 		}
 		it++;
 	}
+}
+void SAMPDriver::SendBitstreamToStreamed(SAMPPlayer *player, RakNet::BitStream *stream) {
+	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
+	while(it != m_connections.end()) {
+		SAMPRakPeer *peer = *it;
+		if(peer->IsPlayerStreamed(player) && peer->GetPlayer() != player) {
+			peer->send_bitstream(stream);
+		}
+		it++;
+	}	
+}
+void SAMPDriver::SendAddPlayerToScoreboard(SAMPPlayer *player) {
+	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
+	while(it != m_connections.end()) {
+		SAMPRakPeer *peer = *it;
+		if(peer->GetPlayer() != player)
+			peer->AddToScoreboard(player);
+		it++;
+	}	
+}
+SAMPPlayer *SAMPDriver::findPlayerByID(uint16_t id) {
+	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
+	while(it != m_connections.end()) {
+		SAMPRakPeer *peer = *it;
+		SAMPPlayer *player = peer->GetPlayer();
+		if(player && player->GetPlayerID() == id)
+			return player;
+		it++;
+	}
+
+	std::vector<SAMPPlayer *>::iterator itb = m_bots.begin();
+	while(itb != m_bots.end()) {
+		SAMPPlayer *player = *itb;
+		if(player->GetPlayerID() == id)
+			return player;
+		itb++;
+	}	
+
+	return NULL;
+}
+uint16_t SAMPDriver::GetFreePlayerID() {
+	for(int i=0;i<SAMP_MAX_PLAYERS;i++) {
+		if(findPlayerByID(i) == NULL)
+			return i;
+	}
+	return -1;
+}
+void SAMPDriver::SendPlayerUpdate(SAMPPlayer *player) {
+	RakNet::BitStream bs;
+	bs.Write((uint8_t)ID_PLAYER_SYNC);
+	bs.Write(player->GetPlayerID());
+
+	float *pos = player->GetPosition();
+	float *quat = player->GetQuat();
+	float *speed = player->GetMoveSpeed();
+	uint8_t health = (uint8_t)player->GetHealth(), armour = (uint8_t)player->GetArmour();
+	uint16_t left_right, up_down, keys;
+
+	uint16_t surf_info = player->GetSurfFlags();
+	float *surf_offset = player->GetSurfOffset();
+
+	uint32_t anim = player->GetAnim();
+
+	player->GetKeys(left_right, up_down, keys);
+
+	if(left_right) {
+		bs.Write(true);
+		bs.Write(left_right);
+	} else {
+		bs.Write(false);
+	}
+
+	if(up_down) {
+		bs.Write(true);
+		bs.Write(up_down);
+	} else {
+		bs.Write(false);
+	}
+	bs.Write(keys);
+
+	bs.Write(pos[0]);
+	bs.Write(pos[1]);
+	bs.Write(pos[2]);
+
+	bs.WriteNormQuat(quat[0], quat[1], quat[2], quat[3]);
+
+	uint8_t health_armour = 0;
+	if(health > 0 && health < 100) {
+		health_armour = ((uint8_t)(health / 7)) << 4;
+	} else if(health >= 100) {
+		health_armour = 0xF << 4;
+	}
+	if(armour > 0 && armour < 100) {
+		health_armour |=  (uint8_t)(armour / 7);
+	} else if(armour >= 100) {
+		health_armour |= 0xF;
+	}
+
+	bs.Write(health_armour);
+	bs.Write(player->GetHoldingWeapon());
+
+	bs.Write(player->GetSpecialAction());
+
+	bs.WriteVector(speed[0], speed[1], speed[2]);
+	if(surf_info) {
+		bs.Write(true);
+		bs.Write(surf_info);
+		bs.Write(surf_offset[0]);
+		bs.Write(surf_offset[1]);
+		bs.Write(surf_offset[2]);
+	} else {
+		bs.Write(false);
+	}
+
+	if(anim) {
+		bs.Write(true);
+		bs.Write(anim);
+	} else {
+		bs.Write(false);
+	}
+	SendBitstreamToStreamed(player, &bs);
 }

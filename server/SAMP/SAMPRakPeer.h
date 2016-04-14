@@ -9,27 +9,6 @@
 class SAMPDriver;
 class SAMPPlayer;
 
-typedef struct _NEW_VEHICLE {
-    uint16_t VehicleId;
-	uint32_t		  iVehicleType;
-	float	  vecPos[3];
-	float	  fRotation;
-	uint8_t	  aColor1;
-	uint8_t	  aColor2;
-	float	  fHealth;
-	uint8_t	  byteInterior;
-	uint32_t	  dwDoorDamageStatus;
-	uint32_t	  dwPanelDamageStatus;
-	uint8_t	  byteLightDamageStatus;
-	uint8_t	  byteTireDamageStatus;
-	uint8_t	  byteAddSiren;
-	uint8_t      byteModSlots[14];
-	uint8_t	  bytePaintjob;
-	uint32_t	  cColor1;
-	uint32_t	  cColor2;
-	uint8_t	  byteUnk;
-} NEW_VEHICLE;
-
 enum PacketEnumeration
 {
 	ID_INTERNAL_PING = 6,
@@ -137,11 +116,7 @@ public:
 	const struct sockaddr_in *getAddress() { return &m_address_info; }
 	void SendClientMessage(uint32_t colour, const char *msg);
 	void ShowPlayerDialog(int dialogid, int type, const char *title, const char *msg, const char *b1 = NULL, const char *b2 = NULL);
-	void SetHealth(float hp);
-	void SetArmour(float hp);
-	void SetSkin(int id);
 	void SpawnPlayer(float x, float y, float z, int skin = 0, int team = -1);
-	void SetPosition(float x, float y, float z);
 	void send_rpc(uint8_t rpc, RakNet::BitStream *stream);
 	void send_bitstream(RakNet::BitStream *stream);
 
@@ -191,7 +166,6 @@ private:
 	struct sockaddr_in m_address_info;
 
 	uint16_t m_packet_sequence;
-	uint16_t m_player_id;
 
 	float m_vehicle_stream_distance;
 
