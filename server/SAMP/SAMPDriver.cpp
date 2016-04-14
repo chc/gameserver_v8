@@ -8,7 +8,7 @@
 #include "SAMPRakPeer.h"
 #include "SAMPPlayer.h"
 
-#define SAMP_MAX_PLAYERS 5
+#define SAMP_MAX_PLAYERS 1000
 
 SAMPDriver::SAMPDriver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
     #ifdef _WIN32
