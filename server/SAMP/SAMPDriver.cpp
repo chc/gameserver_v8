@@ -8,8 +8,6 @@
 #include "SAMPRakPeer.h"
 #include "SAMPPlayer.h"
 
-#define SAMP_MAX_PLAYERS 1000
-
 SAMPDriver::SAMPDriver(INetServer *server, const char *host, uint16_t port) : INetDriver(server) {
     #ifdef _WIN32
     WSADATA wsdata;
@@ -373,7 +371,7 @@ int SAMPDriver::CreateVehicle(int modelid, float x, float y, float z, float zrot
 	SAMPVehicle *veh = (SAMPVehicle *)malloc(sizeof(SAMPVehicle));
 	memset(veh, 0, sizeof(SAMPVehicle));
 
-	veh->id = 1999;
+	veh->id = GetFreeVehicleID();
 	veh->modelid = modelid;
 	veh->health = 1000.0;
 	veh->pos[0] = x;
@@ -419,7 +417,7 @@ void SAMPDriver::SendRPCToAll(int rpc_id, RakNet::BitStream *bs) {
 }
 SAMPPlayer* SAMPDriver::CreateBot() {
 	SAMPPlayer *player = new SAMPPlayer(this); 
-	player->SetPlayerID(1);
+	player->SetPlayerID(GetFreePlayerID());
 	return player;
 }
 void SAMPDriver::AddBot(SAMPPlayer *bot) {
@@ -442,12 +440,13 @@ void SAMPDriver::SendScoreboard(SAMPRakPeer *peer) {
 		itb++;
 	}
 }
-void SAMPDriver::SendRPCToStreamed(SAMPPlayer *player, uint8_t rpc, RakNet::BitStream *stream) {
+void SAMPDriver::SendRPCToStreamed(SAMPPlayer *player, uint8_t rpc, RakNet::BitStream *stream, bool include_sender) {
 	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
 	while(it != m_connections.end()) {
 		SAMPRakPeer *peer = *it;
-		if(peer->IsPlayerStreamed(player)) {
+		if((peer->IsPlayerStreamed(player) || peer->GetPlayer() == player) && (peer->GetPlayer() != player || include_sender)) {
 			peer->send_rpc(rpc, stream);
+			stream->ResetReadPointer();	
 		}
 		it++;
 	}
@@ -458,6 +457,7 @@ void SAMPDriver::SendBitstreamToStreamed(SAMPPlayer *player, RakNet::BitStream *
 		SAMPRakPeer *peer = *it;
 		if(peer->IsPlayerStreamed(player) && peer->GetPlayer() != player) {
 			peer->send_bitstream(stream);
+			stream->ResetReadPointer();			
 		}
 		it++;
 	}	
@@ -491,9 +491,27 @@ SAMPPlayer *SAMPDriver::findPlayerByID(uint16_t id) {
 
 	return NULL;
 }
+
+SAMPVehicle *SAMPDriver::findVehicleByID(uint16_t id) {
+	std::vector<SAMPVehicle *>::iterator it = m_vehicles.begin();
+	while(it != m_vehicles.end()) {
+		SAMPVehicle *veh = *it;
+		if(veh && veh->id == id)
+			return veh;
+		it++;
+	}
+	return NULL;
+}
 uint16_t SAMPDriver::GetFreePlayerID() {
 	for(int i=0;i<SAMP_MAX_PLAYERS;i++) {
 		if(findPlayerByID(i) == NULL)
+			return i;
+	}
+	return -1;
+}
+uint16_t SAMPDriver::GetFreeVehicleID() {
+	for(int i=1;i<SAMP_MAX_VEHICLES;i++) {
+		if(findVehicleByID(i) == NULL)
 			return i;
 	}
 	return -1;
@@ -571,5 +589,133 @@ void SAMPDriver::SendPlayerUpdate(SAMPPlayer *player) {
 	} else {
 		bs.Write(false);
 	}
+	SendBitstreamToStreamed(player, &bs);
+}
+void SAMPDriver::SendVehicleUpdate(SAMPPlayer *player, SAMPVehicle *car) {
+	RakNet::BitStream bs;
+	uint16_t left_right, up_down, keys;
+	uint8_t health = (uint8_t)player->GetHealth(), armour = (uint8_t)player->GetArmour();
+	player->GetKeys(left_right, up_down, keys);
+
+	bs.Write((uint8_t)ID_VEHICLE_SYNC);
+	bs.Write(player->GetPlayerID());
+	bs.Write((uint16_t)car->id);
+
+	bs.Write(left_right);
+	bs.Write(up_down);
+	bs.Write(keys);
+
+	bs.WriteNormQuat(car->quat[0], car->quat[1], car->quat[2], car->quat[3]);
+
+	bs.Write(car->pos[0]);
+	bs.Write(car->pos[1]);
+	bs.Write(car->pos[2]);
+
+	bs.WriteVector(car->vel[0], car->vel[1], car->vel[2]);
+
+	bs.Write((uint16_t)car->health);
+
+	uint8_t health_armour = 0;
+	if(health > 0 && health < 100) {
+		health_armour = ((uint8_t)(health / 7)) << 4;
+	} else if(health >= 100) {
+		health_armour = 0xF << 4;
+	}
+	if(armour > 0 && armour < 100) {
+		health_armour |=  (uint8_t)(armour / 7);
+	} else if(armour >= 100) {
+		health_armour |= 0xF;
+	}
+	bs.Write(health_armour);
+
+	bs.Write(player->GetHoldingWeapon());
+
+	if(car->siren_on)
+		bs.Write(true);
+	else 
+		bs.Write(false);
+
+	if(car->landinggear_state)
+		bs.Write(true);
+	else
+		bs.Write(false);
+
+	//trust angles or trailer ID
+	bs.Write(false);
+	bs.Write(false);
+
+	bs.Write((uint32_t)0);
+
+	//train stuff
+	bs.Write(false);
+	SendBitstreamToStreamed(player, &bs);
+}
+void SAMPDriver::SendPassengerUpdate(SAMPPlayer *player, SAMPVehicle *car) {
+	RakNet::BitStream bs;
+	/*
+		BYTE byteSeatFlags : 7;
+	BYTE byteDriveBy : 1;
+	BYTE byteCurrentWeapon;
+	BYTE bytePlayerHealth;
+	BYTE bytePlayerArmour;
+	WORD lrAnalog;
+	WORD udAnalog;
+	WORD wKeys;
+	float vecPos[3];
+	*/
+	uint16_t left_right, up_down, keys;
+	float *pos = player->GetPosition();
+	bs.Write((uint8_t)ID_PASSENGER_SYNC);
+	bs.Write(player->GetPlayerID());
+	bs.Write((uint16_t)car->id);
+	bs.Write(player->GetSeatFlags());
+	bs.Write(player->GetHoldingWeapon());
+	bs.Write((uint8_t)player->GetHealth());
+	bs.Write((uint8_t)player->GetArmour());
+	player->GetKeys(left_right, up_down, keys);
+	bs.Write(left_right);
+	bs.Write(up_down);
+	bs.Write(keys);
+
+	bs.Write(pos[0]);
+	bs.Write(pos[1]);
+	bs.Write(pos[2]);
+
+
+	SendBitstreamToStreamed(player, &bs);
+}
+void SAMPDriver::SendAimSync(SAMPPlayer *player, SAMPAimSync *aim) {
+	RakNet::BitStream bs;
+	bs.Write((uint8_t)ID_AIM_SYNC);
+	bs.Write(player->GetPlayerID());
+	bs.Write(aim->cam_mode);
+	bs.Write(aim->f1[0]);
+	bs.Write(aim->f1[1]);
+	bs.Write(aim->f1[2]);
+	bs.Write(aim->pos[0]);
+	bs.Write(aim->pos[1]);
+	bs.Write(aim->pos[2]);
+	bs.Write(aim->z);
+	bs.WriteBits(&aim->cam_zoom, 6);
+	bs.WriteBits(&aim->weapon_state, 2);
+	bs.Write(aim->unknown);
+	SendBitstreamToStreamed(player, &bs);
+}
+void SAMPDriver::SendBulletData(SAMPPlayer *player, SAMPBulletData *bullet) {
+	RakNet::BitStream bs;
+	bs.Write((uint8_t)ID_BULLET_SYNC);
+	bs.Write(player->GetPlayerID());
+	bs.Write(bullet->type);
+	bs.Write(bullet->id);
+	bs.Write(bullet->origin[0]);
+	bs.Write(bullet->origin[1]);
+	bs.Write(bullet->origin[2]);
+	bs.Write(bullet->target[0]);
+	bs.Write(bullet->target[1]);
+	bs.Write(bullet->target[2]);
+	bs.Write(bullet->center[0]);
+	bs.Write(bullet->center[1]);
+	bs.Write(bullet->center[2]);
+	bs.Write(bullet->weapon);
 	SendBitstreamToStreamed(player, &bs);
 }

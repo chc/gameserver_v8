@@ -3,6 +3,7 @@ import Frontend
 #import World
 import SAMP
 
+THE_SPAWN_COORDS = [0,0,10] #[1529.6,-1691.2,13.3]
 
 #alle entities extend from this
 class GenericEntity(CoreServer.BaseEntity):
@@ -17,7 +18,7 @@ class BotEntity(GenericEntity):
 		self.Name = "TheBot"
 		self.Model = 111
 		self.Health = 11.0
-		self.Position = [1529.6,-1691.2,13.3]
+		self.Position = THE_SPAWN_COORDS
 		self.World = 0
 		self.Stream_Index = 0
 		print("New bot entering server!")
@@ -34,7 +35,7 @@ class PlayerEntity(GenericEntity):
 	def handle_spawncmd(self, string):
 		self.Spawn(
 			{
-				'position': [1529.6,-1691.2,13.3],
+				'position': THE_SPAWN_COORDS,
 				'model': 111
 			})
 class SAMP3DTextEntity(GenericEntity):
@@ -64,12 +65,13 @@ class SAMPHandler(CoreServer.Connection, CoreServer.CommandHandler):
 		#self.Entity.Weapons[24] += 100
 		#self.pickup = SAMP.CreatePickup({'model': 1222, 'position': [1529.6,-1691.2,13.3], 'pickup_type': 1, 'world': 0, 'stream_index': 0, 'pickup_event': pickup_event})
 		self.Entity.Model = 6
-		self._3dtext = SAMP.Create3DTextLabel({'position': [1529.6,-1691.2,13.3], 'text': 'This is some text', 'test_los': False, 'draw_distance': 500.0})
-		self.vehicle = SAMP.CreateVehicle({'model':411, 'position': [1529.6,-1691.2,13.3], 'world': 0, 'stream_index': 0, 'colour': [1,0]})
+		self._3dtext = SAMP.Create3DTextLabel({'position': THE_SPAWN_COORDS, 'text': 'This is some text', 'test_los': False, 'draw_distance': 500.0})
+		self.vehicle = SAMP.CreateVehicle({'model':411, 'position': THE_SPAWN_COORDS, 'world': 0, 'stream_index': 0, 'colour': [1,0]})
 		#World.CreateVehicle({'position': [1529.6,-1691.2,13.3], 'model': 411})
 		self.SendMessage(0xFF00FFFF, "Set stuff")
 	def handle_testcmd2(self, string):
 		#SAMP.DestroyPickup(self.pickup)
+		self.Entity.PutInVehicle(self.vehicle)
 		SAMP.Destroy3DTextLabel(self._3dtext)
 		self.SendMessage(0xFF00FFFF, "Pickup destrsoyed")
 	def handle_testdlg(self, string):

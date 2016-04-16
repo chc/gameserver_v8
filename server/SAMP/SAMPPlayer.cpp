@@ -9,6 +9,7 @@ SAMPPlayer::SAMPPlayer(SAMPDriver *driver) {
 	m_nametag_colour = 0;
 	m_health = 100.0;
 	m_armour = 0.0;
+	m_seat_flags = 0;
 }
 SAMPPlayer::SAMPPlayer(SAMPRakPeer *peer, SAMPDriver *driver) {
 	mp_samp_peer = peer;
@@ -19,6 +20,7 @@ SAMPPlayer::SAMPPlayer(SAMPRakPeer *peer, SAMPDriver *driver) {
 	m_nametag_colour = 0;
 	m_health = 100.0;
 	m_armour = 0.0;
+	m_seat_flags = 0;
 }
 SAMPPlayer::~SAMPPlayer() {
 
@@ -56,7 +58,7 @@ void SAMPPlayer::SetModelID(uint32_t modelid) {
 	RakNet::BitStream bsData;
 	bsData.Write((uint32_t)m_player_id);
 	bsData.Write((uint32_t)modelid);
-	mp_driver->SendRPCToStreamed(this, ESAMPRPC_SetPlayerSkin, &bsData);
+	mp_driver->SendRPCToStreamed(this, ESAMPRPC_SetPlayerSkin, &bsData, true);
 	m_model_id = modelid;
 }
 void SAMPPlayer::SetNametagColour(uint32_t c) {

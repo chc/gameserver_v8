@@ -20,10 +20,14 @@ class SAMPPlayer;
 
 #define SAMP_MAGIC 0x504d4153
 
+#define SAMP_MAX_VEHICLES 2000
+#define SAMP_MAX_PLAYERS 1000
+
 enum ESAMPRPC {
 	ESAMPRPC_SetPlayerPos = 12,	
 	ESAMPRPC_SetPlayerHealth = 14,	
 	ESAMPRPC_ClientJoin = 25,
+	ESAMPRPC_EnterVehicle = 26,
 	ESAMPRPC_AddPlayerToWorld = 32,
 	ESAMPRPC_DeletePlayerFromWorld = 163,
 	ESAMPRPC_PlayerDeath = 166,
@@ -34,11 +38,13 @@ enum ESAMPRPC {
 	ESAMPRPC_DialogResponse = 62,
 	ESAMPRPC_DestroyPickup = 63,
 	ESAMPRPC_SetPlayerArmour = 66,
+	ESAMPRPC_PutPlayerInVehicle = 70,
 	ESAMPRPC_CreatePickup = 95,
 	ESAMPRPC_RequestClass = 128,
 	ESAMPRPC_RequestSpawn = 129,
 	ESAMPRPC_ServerJoin = 137,
 	ESAMPRPC_SetPlayerSkin = 153,
+	ESAMPRPC_ExitVehicle = 154,
 	ESAMPRPC_VehicleCreate = 164,
 	ESAMPRPC_VehicleDelete = 165,
 };
@@ -96,6 +102,8 @@ typedef struct {
 	float 		roll[3];
 	float 		dir[3];
 	float 		pos[3];
+	float		quat[4];
+	float		vel[3];
 	float 		zrot;
 	uint8_t 	colours[2];
 	bool 		respawn_on_death;
@@ -108,7 +116,51 @@ typedef struct {
 	uint8_t	  	addSiren;
 	uint8_t     components[14];
 	uint8_t	  	paintjob;
+
+	uint8_t siren_on;
+	uint8_t landinggear_state;
+	uint16_t trailerid_or_thrustangle;
+	float train_speed;
 } SAMPVehicle;
+
+
+enum SAMPWeaponState
+{
+	WS_NO_BULLETS = 0,
+	WS_LAST_BULLET,
+	WS_MORE_BULLETS,
+	WS_RELOADING,
+};
+
+typedef struct {
+	uint8_t cam_mode;
+	float f1[3]; //??
+	float pos[3];
+	float z;
+	uint8_t cam_zoom; //6 bits
+	uint8_t weapon_state; //2 bits
+	uint8_t unknown;
+} SAMPAimSync;
+
+typedef struct {
+	uint16_t vehicle_id;
+	uint16_t roll[3];
+	uint16_t direction[3];
+	uint8_t unk[13];
+	float pos[3];
+	float velocity[3];
+	float turning_speed[3];
+	float health;
+} SAMPUnoccupiedVehData;
+
+typedef struct {
+	uint8_t type;
+	uint16_t id;
+	float origin[3];
+	float target[3];
+	float center[3];
+	uint8_t weapon;
+} SAMPBulletData;
 
 
 class SAMPDriver : public INetDriver {
@@ -140,7 +192,7 @@ public:
 
 	void SendScoreboard(SAMPRakPeer *peer);
 
-	void SendRPCToStreamed(SAMPPlayer *player, uint8_t rpc, RakNet::BitStream *stream);
+	void SendRPCToStreamed(SAMPPlayer *player, uint8_t rpc, RakNet::BitStream *stream, bool include_sender = false);
 	void SendBitstreamToStreamed(SAMPPlayer *player, RakNet::BitStream *stream);
 
 	void SendRPCToAll(uint8_t rpc, RakNet::BitStream *stream);
@@ -151,6 +203,14 @@ public:
 
 	SAMPPlayer *findPlayerByID(uint16_t id);
 	uint16_t GetFreePlayerID();
+
+	SAMPVehicle *findVehicleByID(uint16_t id);
+	uint16_t GetFreeVehicleID();
+
+	void SendVehicleUpdate(SAMPPlayer *player, SAMPVehicle *car); 
+	void SendPassengerUpdate(SAMPPlayer *player, SAMPVehicle *car);
+	void SendAimSync(SAMPPlayer *player, SAMPAimSync *aim);
+	void SendBulletData(SAMPPlayer *player, SAMPBulletData *bullet);
 private:
 
 	//samp query stuff

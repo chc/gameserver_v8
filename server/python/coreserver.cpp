@@ -198,6 +198,7 @@ PyMODINIT_FUNC
 PyInit_CoreServer(void)
 {
 	PyObject *m;
+
     gs_ConnectionType.tp_new = gs_Conn_new;//PyType_GenericNew;
     gs_CommandHandlerType.tp_new = PyType_GenericNew;
 
@@ -219,6 +220,7 @@ PyInit_CoreServer(void)
     
     if (PyType_Ready(&gs_BaseEntityType) < 0)
         return NULL;
+    
 	m = PyModule_Create(&coreserver_module);
 
 	Py_INCREF(&gs_ConnectionType);

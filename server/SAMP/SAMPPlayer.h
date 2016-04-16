@@ -5,23 +5,6 @@
 
 #define MAX_SAMP_NAME 24
 
-
-/*
-		uint16_t leftright_keys;
-		uint16_t updown_keys;
-		uint16_t keys;
-		float pos[3];
-		float quat[4];
-		uint8_t health;
-		uint8_t armour;
-		uint8_t weapon;
-		uint8_t specialaction;
-		float movespeed[3];
-		float surfoffset[3];
-		uint16_t surfinfo;
-		uint32_t anim;
-*/
-
 class SAMPPlayer {
 public:
 	SAMPPlayer(SAMPDriver *driver);
@@ -79,6 +62,9 @@ public:
 	void GetKeys(uint16_t &left_right, uint16_t &up_down, uint16_t &keys);
 	void SetKeys(uint16_t left_right, uint16_t up_down, uint16_t keys);
 
+	void SetSeatFlags(uint8_t flags) {m_seat_flags = flags; };
+	uint8_t GetSeatFlags() { return m_seat_flags; };
+
 private:
 	float m_health;
 	float m_armour;
@@ -112,6 +98,8 @@ private:
 	float m_surf_offset[3];
 
 	uint32_t m_anim;
+	
+	uint8_t m_seat_flags;
 
 };
 #endif

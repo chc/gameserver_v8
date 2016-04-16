@@ -139,6 +139,11 @@ public:
 
 	void AddToScoreboard(SAMPPlayer *bot);
 	SAMPPlayer *GetPlayer() { return mp_player; };
+
+	void PutInCar(SAMPVehicle *car, uint8_t seat = 0);
+	void SendEnterCar(SAMPVehicle *car, uint8_t seat);
+	void SendExitCar(SAMPVehicle *car);
+
 private:
 	void handle_raknet_packet(char *data, int len);
 	void process_bitstream(RakNet::BitStream *stream);
@@ -150,8 +155,6 @@ private:
 	void send_connection_accepted(bool success);
 
 	void send_detect_lost_connections();
-
-	void find_rpc_handler_by_id(uint8_t id);
 	void handle_incoming_rpc(RakNet::BitStream *stream);
 
 	uint16_t m_cookie_challenge;
@@ -179,7 +182,9 @@ private:
 	void m_client_join_handler(RakNet::BitStream *stream);
 	void m_client_command_handler(RakNet::BitStream *stream);
 	void m_client_dialogresp_handler(RakNet::BitStream *stream);
-	void m_client_spawned_handler(RakNet::BitStream *stream) ;
+	void m_client_spawned_handler(RakNet::BitStream *stream);
+	void m_client_enter_vehicle_handler(RakNet::BitStream *stream);
+	void m_client_exit_vehicle_handler(RakNet::BitStream *stream);
 
 	//Misc RPC stuff
 	void send_game_init();

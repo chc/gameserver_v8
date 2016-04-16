@@ -206,7 +206,6 @@ PyObject *pyi_samp_createvehicle(PyObject *self, PyObject *args) {
 	}
 	Py_RETURN_NONE;
 }
-
 PyObject *pyi_samp_setpickupentity(PyObject *self, PyObject *args) {
 	SAMPScriptState.mp_base_pickup = (PyTypeObject *)args;
     Py_INCREF(SAMPScriptState.mp_base_pickup);

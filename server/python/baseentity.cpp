@@ -1,4 +1,5 @@
 #include "../PythonInterface.h"
+#include "../CHCGameServer.h"
 #include "../SAMP/SAMPRakPeer.h"
 #include "../SAMP/SAMPPlayer.h"
 #include <structmember.h>
@@ -14,6 +15,7 @@ int Entity_sethp(gs_BaseEntityObject *self, PyObject *value, void *closure);
 PyObject *Entity_gethp(gs_BaseEntityObject *self, void *closure);
 int Entity_setname(gs_BaseEntityObject *self, PyObject *value, void *closure);
 PyObject *Entity_getname(gs_BaseEntityObject *self, void *closure);
+PyObject *pyi_baseentity_putplayerincar(gs_BaseEntityObject *self, PyObject *args);
 
 PyTypeObject gs_BaseEntityType = {
     PyVarObject_HEAD_INIT(NULL, 0)
@@ -71,6 +73,7 @@ PyGetSetDef Entity_getseters[] = {
 PyMethodDef BaseEntity_methods[] = {
     								{"Spawn",  (PyCFunction)pyi_baseentity_spawn, METH_VARARGS,
  								    "Registers commands to be processed by the handler"},
+ 								    {"PutInVehicle", (PyCFunction)pyi_baseentity_putplayerincar, METH_VARARGS, "Puts a player in a vehicle"},
     								{NULL, NULL, 0, NULL}};
 
 PyObject *Entity_gethp(gs_BaseEntityObject *self, void *closure)
@@ -257,4 +260,19 @@ int Entity_setname(gs_BaseEntityObject *self, PyObject *value, void *closure) {
 }
 PyObject *Entity_getname(gs_BaseEntityObject *self, void *closure) {
 
+}
+PyObject *pyi_baseentity_putplayerincar(gs_BaseEntityObject *self, PyObject *args) {
+	int vehid;
+	SAMPDriver *driver = gbl_pi_interface->getGameServer()->getSAMPDriver();
+	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(self->connection);
+	SAMPVehicle *car;
+	if (PyArg_ParseTuple(args, "i", &vehid)) {
+		car = driver->findVehicleByID(vehid);
+		if(car) {
+			if(tbl->user) {
+				tbl->user->PutInCar(car, 0);
+			}
+		}
+	}
+	Py_RETURN_NONE;
 }

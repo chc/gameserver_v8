@@ -23,6 +23,8 @@ RPCHandler SAMPRakPeer::s_rpc_handler[] = {
 	{ESAMPRPC_ClientCommand, &SAMPRakPeer::m_client_command_handler},
 	{ESAMPRPC_DialogResponse, &SAMPRakPeer::m_client_dialogresp_handler},
 	{ESAMPRPC_ClientSpawned, &SAMPRakPeer::m_client_spawned_handler},
+	{ESAMPRPC_EnterVehicle, &SAMPRakPeer::m_client_enter_vehicle_handler},
+	{ESAMPRPC_ExitVehicle, &SAMPRakPeer::m_client_exit_vehicle_handler},
 };
 
 SAMPRakPeer::SAMPRakPeer(SAMPDriver *driver, struct sockaddr_in *address_info) {
@@ -146,6 +148,26 @@ void SAMPRakPeer::process_bitstream(RakNet::BitStream *stream) {
 	//printf("Rak MSGID: %d/%02x - %d\n",msgid,msgid, BITS_TO_BYTES(stream->GetNumberOfUnreadBits()));
 	uint32_t ping_cookie;
 	uint32_t the_time = time(NULL);
+
+
+	uint16_t leftright_keys;
+	uint16_t updown_keys;
+	uint16_t keys;
+	float pos[3];
+	float quat[4];
+
+
+	uint8_t health;
+	uint8_t armour;
+	uint8_t weapon;
+
+	SAMPVehicle *car;
+
+	float movespeed[3];
+
+	uint16_t vehicleid;
+	uint8_t seat_flags;
+
 	switch(msgid) {
 		case ID_CONNECTION_REQUEST:
 		send_samp_rakauth("277C2AD934406F33");
@@ -203,80 +225,153 @@ void SAMPRakPeer::process_bitstream(RakNet::BitStream *stream) {
 		case ID_NEW_INCOMING_CONNECTION:
 		//printf("New connection");
 		break;
-		case ID_PLAYER_SYNC:
+		case ID_VEHICLE_SYNC:
+			stream->Read(vehicleid);
+			car = mp_driver->findVehicleByID(vehicleid);
+			if(!car)
+				return;
+			stream->Read(leftright_keys);
+			stream->Read(updown_keys);
+			stream->Read(keys);
+			stream->Read(car->quat[0]);
+			stream->Read(car->quat[1]);
+			stream->Read(car->quat[2]);
+			stream->Read(car->quat[3]);
+			stream->Read(car->pos[0]);
+			stream->Read(car->pos[1]);
+			stream->Read(car->pos[2]);
+			stream->Read(car->vel[0]);
+			stream->Read(car->vel[1]);
+			stream->Read(car->vel[2]);
+			stream->Read(car->health);
+			stream->Read(health);
+			stream->Read(armour);
+			stream->Read(weapon);
+			stream->Read(car->siren_on);
+			stream->Read(car->landinggear_state);
+			stream->Read(car->trailerid_or_thrustangle);
+			stream->Read(car->train_speed);
 
-		uint16_t leftright_keys;
-		uint16_t updown_keys;
-		uint16_t keys;
-		float pos[3];
-		float quat[4];
-		uint8_t health;
-		uint8_t armour;
-		uint8_t weapon;
-		uint8_t specialaction;
-		float movespeed[3];
-		float surfoffset[3];
-		uint16_t surfinfo;
-		uint32_t anim;
-		stream->Read(leftright_keys);
-		stream->Read(updown_keys);
-		stream->Read(keys);
-		stream->Read(pos[0]);
-		stream->Read(pos[1]);
-		stream->Read(pos[2]);
-		stream->Read(quat[0]);
-		stream->Read(quat[1]);
-		stream->Read(quat[2]);
-		stream->Read(quat[3]);
-		stream->Read(health);
-		stream->Read(armour);
-		stream->Read(weapon);
-		stream->Read(specialaction);
-		stream->Read(movespeed[0]);
-		stream->Read(movespeed[1]);
-		stream->Read(movespeed[2]);
-		stream->Read(surfoffset[0]);
-		stream->Read(surfoffset[1]);
-		stream->Read(surfoffset[2]);
-		stream->Read(surfinfo);
-		stream->Read(anim);
+			printf("Car pos: %f %f %f\nHealth: %d %d\n",car->pos[0],car->pos[1],car->pos[2],health,armour);
 
-		if(mp_player) {
-			mp_player->SetPosition((float *)&pos);
-			mp_player->SetQuat((float *)&quat);
+			mp_player->SetPosition((float *)&car->pos);
+			mp_player->SetQuat((float *)&car->quat);
 			mp_player->SetHealth((float)health);
 			mp_player->SetArmour((float)armour);
-			mp_player->SetAnim(anim);
-			mp_player->SetMoveSpeed((float *)&movespeed);
 			mp_player->SetHoldingWeapon(weapon);
-			mp_player->SetSurfFlags(surfinfo);
-			mp_player->SetSurfOffset((float *)&surfoffset);
-			mp_player->SetSpecialAction(specialaction);
 			mp_player->SetKeys(leftright_keys, updown_keys, keys);
-			mp_driver->SendPlayerUpdate(mp_player);
-		}
-		
-		//printf("Player sync: pos(%f,%f,%f) : %d %d (%f,%f,%f) : %d\n",pos[0],pos[1],pos[2],health,armour,movespeed[0],movespeed[1],movespeed[2], mp_player->GetPlayerID());
+			mp_driver->SendVehicleUpdate(mp_player, car);
+		break;
+		case ID_PASSENGER_SYNC:
+			stream->Read(vehicleid);
+			car = mp_driver->findVehicleByID(vehicleid);
+			if(!car)
+				return;
+			stream->Read(seat_flags);
+			stream->Read(weapon);
+			stream->Read(health);
+			stream->Read(armour);
+			stream->Read(leftright_keys);
+			stream->Read(updown_keys);
+			stream->Read(keys);
+			stream->Read(pos[0]);
+			stream->Read(pos[1]);
+			stream->Read(pos[2]);
+
+			mp_player->SetPosition((float *)&pos);
+			mp_player->SetKeys(leftright_keys, updown_keys, keys);
+			mp_player->SetHealth((float)health);
+			mp_player->SetArmour((float)armour);
+			mp_player->SetHoldingWeapon(weapon);
+			mp_player->SetSeatFlags(seat_flags);
+
+			mp_driver->SendPassengerUpdate(mp_player, car);
+		break;
+		case ID_AIM_SYNC:
+			SAMPAimSync aimsync;
+			stream->Read(aimsync.cam_mode);
+			stream->Read(aimsync.f1[0]);
+			stream->Read(aimsync.f1[1]);
+			stream->Read(aimsync.f1[2]);
+			stream->Read(aimsync.pos[0]);
+			stream->Read(aimsync.pos[1]);
+			stream->Read(aimsync.pos[2]);
+			stream->Read(aimsync.z);
+			stream->ReadBits(&aimsync.cam_zoom, 6);
+			stream->ReadBits(&aimsync.weapon_state, 2);
+			stream->Read(aimsync.unknown);
+			printf("Aim sync: %d %f %f %f - %f %f %f - %d | %d | %d\n", aimsync.cam_mode,aimsync.pos[0],aimsync.pos[1],aimsync.pos[2], aimsync.f1[0], aimsync.f1[1], aimsync.f1[2], aimsync.cam_zoom, aimsync.weapon_state, aimsync.unknown);
+			mp_driver->SendAimSync(mp_player, &aimsync);
+		break;
+		case ID_BULLET_SYNC:
+			SAMPBulletData bulletsync;
+			stream->Read(bulletsync.type);
+			stream->Read(bulletsync.id);
+			stream->Read(bulletsync.origin[0]);
+			stream->Read(bulletsync.origin[1]);
+			stream->Read(bulletsync.origin[2]);
+			stream->Read(bulletsync.target[0]);
+			stream->Read(bulletsync.target[1]);
+			stream->Read(bulletsync.target[2]);
+			stream->Read(bulletsync.center[0]);
+			stream->Read(bulletsync.center[1]);
+			stream->Read(bulletsync.center[2]);
+			stream->Read(bulletsync.weapon);
+			printf("Bullet sync: %f %f %f (%d) | %d\n",bulletsync.target[0],bulletsync.target[1],bulletsync.target[2], bulletsync.weapon);
+			mp_driver->SendBulletData(mp_player, &bulletsync);
+		break;
+		case ID_UNOCCUPIED_SYNC:
+		break;
+		case ID_PLAYER_SYNC:
+			uint8_t specialaction;
+			float surfoffset[3];
+			uint16_t surfinfo;
+			uint32_t anim;
+			stream->Read(leftright_keys);
+			stream->Read(updown_keys);
+			stream->Read(keys);
+			stream->Read(pos[0]);
+			stream->Read(pos[1]);
+			stream->Read(pos[2]);
+			stream->Read(quat[0]);
+			stream->Read(quat[1]);
+			stream->Read(quat[2]);
+			stream->Read(quat[3]);
+			stream->Read(health);
+			stream->Read(armour);
+			stream->Read(weapon);
+			stream->Read(specialaction);
+			stream->Read(movespeed[0]);
+			stream->Read(movespeed[1]);
+			stream->Read(movespeed[2]);
+			stream->Read(surfoffset[0]);
+			stream->Read(surfoffset[1]);
+			stream->Read(surfoffset[2]);
+			stream->Read(surfinfo);
+			stream->Read(anim);
+
+			if(mp_player) {
+				mp_player->SetPosition((float *)&pos);
+				mp_player->SetQuat((float *)&quat);
+				mp_player->SetHealth((float)health);
+				mp_player->SetArmour((float)armour);
+				mp_player->SetAnim(anim);
+				mp_player->SetMoveSpeed((float *)&movespeed);
+				mp_player->SetHoldingWeapon(weapon);
+				mp_player->SetSurfFlags(surfinfo);
+				mp_player->SetSurfOffset((float *)&surfoffset);
+				mp_player->SetSpecialAction(specialaction);
+				mp_player->SetKeys(leftright_keys, updown_keys, keys);
+				mp_driver->SendPlayerUpdate(mp_player);
+			}
+		break;
+		case ID_WEAPONS_UPDATE:
+		printf("Weapons update - %d\n", BITS_TO_BYTES(stream->GetNumberOfUnreadBits()));
+		break;
+		case ID_STATS_UPDATE:
+		printf("Stats update - %d\n", BITS_TO_BYTES(stream->GetNumberOfUnreadBits()));
 		break;
 	}
-	/*
-		ID_PLAYER_SYNC = 207,
-	ID_MARKERS_SYNC = 208,
-	ID_UNOCCUPIED_SYNC = 209,
-	ID_TRAILER_SYNC = 210,
-	ID_PASSENGER_SYNC = 211,
-	ID_SPECTATOR_SYNC = 212,
-	ID_AIM_SYNC = 203,
-	ID_VEHICLE_SYNC = 200,
-	ID_RCON_COMMAND = 201,
-	ID_RCON_RESPONCE = 202,
-	ID_WEAPONS_UPDATE = 204,
-	ID_STATS_UPDATE = 205,
-	ID_BULLET_SYNC = 206,
-	*/
-}
-void SAMPRakPeer::find_rpc_handler_by_id(uint8_t id) {
-
 }
 
 void SAMPRakPeer::handle_incoming_rpc(RakNet::BitStream *stream) {
@@ -301,6 +396,17 @@ void SAMPRakPeer::handle_incoming_rpc(RakNet::BitStream *stream) {
 	printf("RPC not found: %d\n", rpcid);
 
 }
+void SAMPRakPeer::m_client_enter_vehicle_handler(RakNet::BitStream *stream) {
+	uint16_t carid;
+	uint8_t seat;
+	stream->Read(carid);
+	stream->Read(seat);
+	SAMPVehicle *car = mp_driver->findVehicleByID(carid);
+	if(car) {
+		SendEnterCar(car, seat);
+	}
+}
+
 void SAMPRakPeer::send_connection_accepted(bool success) {
 	RakNet::BitStream bs;
 	bs.Write((uint8_t)ID_CONNECTION_REQUEST_ACCEPTED);
@@ -444,6 +550,15 @@ void SAMPRakPeer::m_client_join_handler(RakNet::BitStream *stream) {
 	}
 	m_got_client_join = true;
 }
+void SAMPRakPeer::m_client_exit_vehicle_handler(RakNet::BitStream *stream) {
+	uint16_t carid;
+	uint8_t seat;
+	stream->Read(carid);
+	SAMPVehicle *car = mp_driver->findVehicleByID(carid);
+	if(car) {
+		SendExitCar(car);
+	}
+}
 void SAMPRakPeer::send_detect_lost_connections() {
 	RakNet::BitStream bs;
 	bs.Write((uint8_t)ID_DETECT_LOST_CONNECTIONS);
@@ -536,6 +651,8 @@ void SAMPRakPeer::SpawnPlayer(float x, float y, float z, int skin, int team) {
 	psInfo.vecPos[1] = y;
 	psInfo.vecPos[2] = z;
 
+	psInfo.iSpawnWeapons[0] = 24;
+	psInfo.iSpawnWeaponsAmmo[0] = 690;
 	mp_player->SetModelID(skin);
 	mp_player->SetTeam(team);
 	mp_player->SetSpawned(true);
@@ -655,8 +772,8 @@ void SAMPRakPeer::StreamInCar(SAMPVehicle *car) {
 	bsData.Write((uint8_t)car->addSiren);
 	bsData.Write((char *)&car->components,sizeof(car->components));
 	bsData.Write((uint8_t)car->paintjob);
-	bsData.Write((uint32_t)0); 
-	bsData.Write((uint32_t)0);
+	bsData.Write((uint32_t)car->colours[0]); 
+	bsData.Write((uint32_t)car->colours[1]);
 	bsData.Write((uint8_t)0);
 
 	send_rpc(ESAMPRPC_VehicleCreate, &bsData);	
@@ -671,6 +788,7 @@ void SAMPRakPeer::StreamOutCar(SAMPVehicle *car) {
 		SAMPStreamRecord rec = *it;
 		if(rec.data == (void *)car) {
 			m_streamed_vehicles.erase(it);
+			break;
 		}
 		it++;
 	}
@@ -678,10 +796,15 @@ void SAMPRakPeer::StreamOutCar(SAMPVehicle *car) {
 	send_rpc(ESAMPRPC_VehicleDelete, &bsData);	
 }
 bool VecInRadius(float r, float x, float y, float z) {
-	return ((x) + (y) + (z)) < (r);
+	return sqrtf(pow(x, 2) + pow(y, 2) + pow(z, 2)) < r;
 }
 bool SAMPRakPeer::VehicleInStreamRange(SAMPVehicle *car) {
-	return VecInRadius(m_vehicle_stream_distance, car->pos[0], car->pos[1], car->pos[2]);
+	float dist[3];
+	float *pos = GetPlayer()->GetPosition();
+	dist[0] = car->pos[0] - pos[0];
+	dist[1] = car->pos[1] - pos[1];
+	dist[2] = car->pos[2] - pos[2];
+	return VecInRadius(m_vehicle_stream_distance, dist[0], dist[1], dist[2]);
 }
 bool SAMPRakPeer::IsVehicleStreamed(SAMPVehicle *car) {
 	std::vector<SAMPStreamRecord>::iterator it = m_streamed_vehicles.begin();
@@ -738,7 +861,23 @@ bool SAMPRakPeer::PlayerInStreamRange(SAMPPlayer *car) {
 	float *pos = car->GetPosition();
 	return VecInRadius(m_vehicle_stream_distance, pos[0], pos[1], pos[2]);
 }
-
+void SAMPRakPeer::PutInCar(SAMPVehicle *car, uint8_t seat) {
+	RakNet::BitStream bs;
+	bs.Write(car->id);
+	bs.Write(seat);
+	send_rpc(ESAMPRPC_PutPlayerInVehicle, &bs);
+}
+void SAMPRakPeer::SendEnterCar(SAMPVehicle *car, uint8_t seat) {
+	RakNet::BitStream bs;
+	bs.Write(car->id);
+	bs.Write(seat);
+	mp_driver->SendRPCToStreamed(mp_player, ESAMPRPC_EnterVehicle, &bs, true);
+}
+void SAMPRakPeer::SendExitCar(SAMPVehicle *car) {
+	RakNet::BitStream bs;
+	bs.Write(car->id);
+	mp_driver->SendRPCToStreamed(mp_player, ESAMPRPC_ExitVehicle, &bs, true);	
+}
 void SAMPRakPeer::StreamInPlayer(SAMPPlayer *car) {
 	if(car == mp_player || !car->GetSpawned() || !mp_player->GetSpawned()) 
 		return;
@@ -770,6 +909,7 @@ void SAMPRakPeer::StreamOutPlayer(SAMPPlayer *peer) {
 		SAMPStreamRecord rec = *it;
 		if(rec.data == (void *)peer) {
 			m_streamed_players.erase(it);
+			break;
 		}
 		it++;
 	}
