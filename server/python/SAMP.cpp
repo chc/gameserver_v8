@@ -25,6 +25,9 @@ PyObject *pyi_samp_createvehicle(PyObject *self, PyObject *args);
 PyObject *pyi_samp_setpickupentity(PyObject *self, PyObject *args);
 PyObject *pyi_samp_set3dtextextentity(PyObject *self, PyObject *args);
 PyObject *pyi_samp_setvehicleentity(PyObject *self, PyObject *args);
+
+PyObject *pyi_samp_setnumclasses(PyObject *self, PyObject *args);
+PyObject *pyi_samp_showgametext(PyObject *self, PyObject *args);
 PyMethodDef SAMP_methods[] = {
     								{"CreatePickup",  (PyCFunction)pyi_samp_createpickup, METH_VARARGS,
  								    "Creates a pickup"},
@@ -42,6 +45,9 @@ PyMethodDef SAMP_methods[] = {
  								    "Sets the 3d Text Label Entity"},
  								    {"SetVehicleEntity",  (PyCFunction)pyi_samp_setvehicleentity, METH_O,
  								    "Sets the vehicle entity"},
+
+ 								    {"SetNumSpawnClasses", (PyCFunction)pyi_samp_setnumclasses, METH_VARARGS, "Sets the number of classes"},
+ 								    {"ShowGameText", (PyCFunction)pyi_samp_showgametext, METH_VARARGS, "Sends Game Text to the client"},
     								{NULL, NULL, 0, NULL}};
 
 struct PyModuleDef samp_module = {
@@ -219,5 +225,30 @@ PyObject *pyi_samp_set3dtextextentity(PyObject *self, PyObject *args) {
 PyObject *pyi_samp_setvehicleentity(PyObject *self, PyObject *args) {
 	SAMPScriptState.mp_base_vehicle = (PyTypeObject *)args;
     Py_INCREF(SAMPScriptState.mp_base_vehicle);
+	Py_RETURN_NONE;
+}
+PyObject *pyi_samp_setnumclasses(PyObject *self, PyObject *args) {
+	int num_classes;
+	PyObject *conn;
+	if(PyArg_ParseTuple(args, "Oi", &conn, &num_classes)) {
+		ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(conn);
+		if(tbl && tbl->user) {
+			tbl->user->SetNumSpawnClasses(num_classes);
+		}
+	}
+	Py_RETURN_NONE;
+}
+PyObject *pyi_samp_showgametext(PyObject *self, PyObject *args) {
+	const char *text;
+	int time_ms;
+	int style;
+	PyObject *conn;
+	if(PyArg_ParseTuple(args, "Osii", &conn, &text, &time_ms, &style)) {
+		ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(conn);
+
+		if(tbl && tbl->user) {
+			tbl->user->SendGameText(text, time_ms, style);
+		}
+	}
 	Py_RETURN_NONE;
 }

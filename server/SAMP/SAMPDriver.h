@@ -39,7 +39,10 @@ enum ESAMPRPC {
 	ESAMPRPC_DestroyPickup = 63,
 	ESAMPRPC_SetPlayerArmour = 66,
 	ESAMPRPC_PutPlayerInVehicle = 70,
+	ESAMPRPC_ShowGameText = 73,
 	ESAMPRPC_CreatePickup = 95,
+	ESAMPRPC_SendClientMessage = 93,
+	ESAMPRPC_ChatMessage = 101,
 	ESAMPRPC_RequestClass = 128,
 	ESAMPRPC_RequestSpawn = 129,
 	ESAMPRPC_ServerJoin = 137,
@@ -161,6 +164,14 @@ typedef struct {
 	float center[3];
 	uint8_t weapon;
 } SAMPBulletData;
+
+#define SAMP_SPAWN_MAX_WEAPONS 3
+typedef struct {
+	uint16_t skin;
+	uint8_t team;
+	uint8_t weapons[SAMP_SPAWN_MAX_WEAPONS];
+	uint16_t ammo[SAMP_SPAWN_MAX_WEAPONS];
+} SAMPPlayerClass;
 
 
 class SAMPDriver : public INetDriver {

@@ -144,6 +144,11 @@ public:
 	void SendEnterCar(SAMPVehicle *car, uint8_t seat);
 	void SendExitCar(SAMPVehicle *car);
 
+	int  GetNumSpawnClasses() { return m_num_spawn_classes; };
+	void SetNumSpawnClasses(int num_classes) { m_num_spawn_classes = num_classes; };
+
+	void SendGameText(const char *msg, uint32_t time_ms, uint32_t style = 6);
+
 private:
 	void handle_raknet_packet(char *data, int len);
 	void process_bitstream(RakNet::BitStream *stream);
@@ -185,6 +190,9 @@ private:
 	void m_client_spawned_handler(RakNet::BitStream *stream);
 	void m_client_enter_vehicle_handler(RakNet::BitStream *stream);
 	void m_client_exit_vehicle_handler(RakNet::BitStream *stream);
+	void m_client_request_spawn(RakNet::BitStream *stream);
+	void m_client_request_class(RakNet::BitStream *stream);
+	void m_client_chat_message_handler(RakNet::BitStream *stream);
 
 	//Misc RPC stuff
 	void send_game_init();
@@ -193,6 +201,8 @@ private:
 	void send_fake_players();
 
 	SAMPPlayer *mp_player;
+
+	int m_num_spawn_classes;
 	
 };
 #endif //_SAMPRAKPEER_H

@@ -1,6 +1,7 @@
 #include "CHCGameServer.h"
 #include "ScriptInterface.h"
 #include "PythonInterface.h"
+#include "SAMP/SAMPDriver.h"
 CHCGameServer::CHCGameServer() {
 	mp_script_interface = NULL;
 }
@@ -44,7 +45,6 @@ IScriptInterface *CHCGameServer::GetScriptInterface() {
 	return mp_script_interface;
 }
 
-#include "SAMP/SAMPDriver.h"
 SAMPDriver *CHCGameServer::getSAMPDriver() {
 	std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 	while(it != m_net_drivers.end()) {

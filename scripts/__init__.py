@@ -1,27 +1,37 @@
 import CoreServer
 import Frontend
-#import World
 import SAMP
 
-THE_SPAWN_COORDS = [0,0,10] #[1529.6,-1691.2,13.3]
+THE_SPAWN_COORDS = [1529.6,-1691.2,13.3]
+CLASS_TYPE_ZOMBIE = 0
+CLASS_TYPE_HUMAN = 1
+
+TEAM_HUMAN = 0
+TEAM_ZOMBIE = 1
+
+DEFAULT_GRAVITY = 0.08
+
+ZOMBIE_CLASSES = [
+	{'skin': 4, 'name': 'Fast Joe', 'gravity': 0.005, 'CJ_run': True, 'description': 'Fast Joe is a fast zombie, who can jump high', 'contact_instant_zombie': False, 'health': 300.0},
+	{'skin': 5, 'name': 'Slow Sal', 'gravity': 0.010, 'CJ_run': False, 'description': 'Fast Joe is a fast zombie, who can jump high', 'contact_instant_zombie': False, 'health': 800.0},
+	{'skin': 162, 'name': 'Slimy Farmer', 'gravity': 0.008, 'CJ_run': True, 'description': 'Slimy Farmer ', 'contact_instant_zombie': False, 'health': 800.0},
+]
+
+DEFAULT_WEAPONS = [
+	[24,100],
+	[25, 100]
+]
+HUMAN_CLASSES = [
+	{'skin': 186, 'name': 'Distressed Businessman', 'weapons': DEFAULT_WEAPONS, 'description': 'A normal ped', 'health': 100.0},
+	{'skin': 280, 'name': 'Cop', 'weapons': DEFAULT_WEAPONS, 'description': 'A normal ped', 'health': 100.0, 'armour': 100.0},
+
+]
 
 #alle entities extend from this
 class GenericEntity(CoreServer.BaseEntity):
 	def __init__(self):
 		print("base entity")
 		self.IsBot = False
-
-class BotEntity(GenericEntity):
-	def __init__(self):
-		super(BotEntity, self).__init__()
-		self.IsBot = True
-		self.Name = "TheBot"
-		self.Model = 111
-		self.Health = 11.0
-		self.Position = THE_SPAWN_COORDS
-		self.World = 0
-		self.Stream_Index = 0
-		print("New bot entering server!")
 
 class PlayerEntity(GenericEntity):
 	def __init__(self, connection):
@@ -32,12 +42,23 @@ class PlayerEntity(GenericEntity):
 	def OnEnterWorld(self):
 		print("Enter world!")
 		self.connection.SendMessage(0xFFFFFFFF, ("Welcome to the Python server, your IP is: {}:{}".format(self.connection.GetIP(), self.connection.GetPort())))
-	def handle_spawncmd(self, string):
-		self.Spawn(
-			{
-				'position': THE_SPAWN_COORDS,
-				'model': 111
-			})
+class SAMPHandler(CoreServer.Connection, CoreServer.CommandHandler):
+	def __init__(self):
+		SAMP.SetNumSpawnClasses(self, 5)
+		self.Entity = PlayerEntity(self)
+		self.SetEntity(self.Entity)
+	
+		self.Entity.Health = 100
+	def OnSpawnSelect(self, index):
+		print("Got class selection: {}".format(index))
+		SAMP.ShowGameText(self, "Some text", 5000, 6)
+		self.SendMessage(0xFF00FFFF, "blah blah")
+	def OnChatMessagae(self, message):
+		print("message: {}".format(message))
+
+def pickup_event(pickup_entity, player_entity):
+	print("asdasd")
+
 class SAMP3DTextEntity(GenericEntity):
 	def __init__(self):
 		print("asdasd")
@@ -49,65 +70,9 @@ class VehicleEntity(GenericEntity):
 class PickupEntity(GenericEntity):
 	def __init__(self):
 		print("Pickup entity")
-class SAMPHandler(CoreServer.Connection, CoreServer.CommandHandler):
-	def handle_pmcmd(self, string):
-		print("PM command: {}".format(string))
-		self.Entity.Spawn({'position': [100.0,100.0,100.0], 'model': 51})
-		self.SendMessage(0xFFFFFFFF, string)
-	def handle_dialog(self, list_index, button_id, input):
-		print("got dlg resp: {} {} ".format(self, input))
-		self.SendMessage(0xFF00FF00, ("Dialog resp {} | {} | {}".format(list_index, button_id, input)))
-	def handle_testcmd(self, string):
-		self.Entity.Health = 50.0
-		self.Entity.Armour = 50.0
-		#self.Entity.Position = [0.0,0.0,100.0]
-		#self.Entity.Weapons = {24: 50, 31: 1000}
-		#self.Entity.Weapons[24] += 100
-		#self.pickup = SAMP.CreatePickup({'model': 1222, 'position': [1529.6,-1691.2,13.3], 'pickup_type': 1, 'world': 0, 'stream_index': 0, 'pickup_event': pickup_event})
-		self.Entity.Model = 6
-		self._3dtext = SAMP.Create3DTextLabel({'position': THE_SPAWN_COORDS, 'text': 'This is some text', 'test_los': False, 'draw_distance': 500.0})
-		self.vehicle = SAMP.CreateVehicle({'model':411, 'position': THE_SPAWN_COORDS, 'world': 0, 'stream_index': 0, 'colour': [1,0]})
-		#World.CreateVehicle({'position': [1529.6,-1691.2,13.3], 'model': 411})
-		self.SendMessage(0xFF00FFFF, "Set stuff")
-	def handle_testcmd2(self, string):
-		#SAMP.DestroyPickup(self.pickup)
-		self.Entity.PutInVehicle(self.vehicle)
-		SAMP.Destroy3DTextLabel(self._3dtext)
-		self.SendMessage(0xFF00FFFF, "Pickup destrsoyed")
-	def handle_testdlg(self, string):
-		Frontend.CreateModal(self, {'title': 'Test Dialog', 'message': 'Please enter a string', 'type': Frontend.INPUT_BOX, 'buttons': ['Ok', 'Cancel'], 'callback': self.handle_dialog, 'extra': 'anything'})
-	def __init__(self):
-		self.Entity = PlayerEntity(self)
-		self.SetEntity(self.Entity)
-		#self.Entity.Camera.Position = [100, 100, 100]
-		#self.Entity.Camera.Lerp(100.0, 200.0, 300.0, 18000)
-		#Entity.Camera.Slerp()
-		#self.PutInWorld(0)
-		#self.SetStreamIndex(0)
-		
-		self.Entity.Health = 100
-		samphandler_command_table = [
-			{'primary_command': 'pm', 'aliases': ['privatemessage', 'privmsg'], 'function': self.handle_pmcmd},
-			{'primary_command': 'dialog', 'aliases': ['dlg'], 'function': self.handle_testdlg},
-			{'primary_command': 'test', 'aliases': ['blah'], 'function': self.handle_testcmd},
-			{'primary_command': 'boom', 'aliases': ['blah'], 'function': self.handle_testcmd2},
-			{'primary_command': 'spawn', 'function': self.Entity.handle_spawncmd},
 
-		] #commands which are usable at any user state
-		print("new connection {}, IP {}:{}".format(self,self.GetIP(),self.GetPort()))
-		self.RegisterCommands(samphandler_command_table)
 
-def pickup_event(pickup_entity, player_entity):
-	print("asdasd")
 CoreServer.SetConnectionHandler(SAMPHandler)
 SAMP.SetPickupEntity(PickupEntity)
 SAMP.Set3DTextLabelEntity(SAMP3DTextEntity)
 SAMP.SetVehicleEntity(VehicleEntity)
-#SAMP.CreatePickup({'model': 1222, 'position': [1529.6,-1691.2,13.3], 'pickup_type': 1, 'world': 0, 'stream_index': 0, 'pickup_event': pickup_event})
-#SAMP.Create3DTextLabel({'text': 'Some text','position': [1529.6,-1691.2,15.3],'colour': 0xFFFFFFFF, 'world': 0, 'stream_index': 0});
-#SAMP.CreateVehicle({'model':411, 'position': [1529.6,-1691.2,13.3], 'world': 0, 'stream_index': 0, 'colour': [1,0]})
-
-the_bot = BotEntity()
-CoreServer.AddEntity(the_bot)
-
-#the_bot.RemoveEntity(the_bot)

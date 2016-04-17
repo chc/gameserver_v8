@@ -146,6 +146,16 @@ void PythonScriptInterface::HandleEvent(int event_id, void *user, void *extra) {
 			}
 			break;
 		}
+		case CHCGS_SpawnSelect: {
+			if(tbl->entity) {
+				PyObject_CallMethod(tbl->connection_object, "OnSpawnSelect", "i", extra);
+			}
+			break;
+		}
+		case CHCGS_ChatMessage: {
+			PyObject_CallMethod(tbl->connection_object, "OnChatMessagae", "s", extra);
+			break;
+		}
 	}
 }
 char *PythonScriptInterface::copyPythonString(PyObject *string) {

@@ -9,6 +9,8 @@ enum CHCGS_Events {
 	CHCGS_EnterWorld,
 	CHCGS_ClientCommand,
 	CHCGS_DialogResponse,
+	CHCGS_SpawnSelect,
+	CHCGS_ChatMessage,
 };
 typedef struct {
 	int dialog_id;
