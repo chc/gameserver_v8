@@ -148,7 +148,9 @@ public:
 	void SetNumSpawnClasses(int num_classes) { m_num_spawn_classes = num_classes; };
 
 	void SendGameText(const char *msg, uint32_t time_ms, uint32_t style = 6);
-
+	
+	void ShowTextDraw(SAMPTextDraw *td);
+	void HideTextDraw(SAMPTextDraw *td);
 private:
 	void handle_raknet_packet(char *data, int len);
 	void process_bitstream(RakNet::BitStream *stream);

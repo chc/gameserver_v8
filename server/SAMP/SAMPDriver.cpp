@@ -502,10 +502,69 @@ SAMPVehicle *SAMPDriver::findVehicleByID(uint16_t id) {
 	}
 	return NULL;
 }
+SAMPTextDraw *SAMPDriver::FindTextDrawByID(uint16_t id) {
+	std::vector<SAMPTextDraw *>::iterator it = m_textdraws.begin();
+	while(it != m_textdraws.end()) {
+		SAMPTextDraw *td = *it;
+		if(td->id == id) {
+			return td;
+		}
+		it++;
+	}
+	return NULL;
+}
 uint16_t SAMPDriver::GetFreePlayerID() {
 	for(int i=0;i<SAMP_MAX_PLAYERS;i++) {
 		if(findPlayerByID(i) == NULL)
 			return i;
+	}
+	return -1;
+}
+/*
+Textdraw: ID: 4
+TD Flags: 16
+TD Length: 0.480000, 1.120000
+TD Col: FF000000
+TD Width/Height: 1280.000000 1280.000000
+TD Shadow/Outline: 0 0
+TD Pos: 0.000000 0.000000TD Box Col: 80808080
+TD Style: 1
+TD Mdl: 0
+TD Rot: 0.000000 0.000000 0.000000
+TD Zoom: 1.000000
+TD Cols: 0000FFFF 0000FFFF
+TD Msg: Test textdraw
+
+
+*/
+SAMPTextDraw *SAMPDriver::CreateTextDraw() {
+	SAMPTextDraw *text = (SAMPTextDraw *)malloc(sizeof(SAMPTextDraw));
+	memset(text,0,sizeof(SAMPTextDraw));
+	text->id = GetFreeTextDrawID();
+	strcpy(text->text,"Some string");
+	text->x = 0.0f;
+	text->y = 0.0f;
+	text->font_width = 0.480000f;
+	text->font_height = 1.12f;
+	text->box_width = 1280.0f;
+	text->box_height = 1280.6f;
+	text->box_colour = 0x80808080;
+	text->font_colour = 0xFF000000;
+	text->background_colour = 0xFFFFFFFF;
+	text->flags |= SAMPTD_IsLeftAligned|SAMPTD_IsProportional;
+	text->style = 1;
+	text->zoom = 1.0;
+	//text->flags = 16;
+	text->model_colours[0] = 0x0000FFFF;
+	text->model_colours[1] = 0x0000FFFF;
+	m_textdraws.push_back(text);
+	return text;
+}
+uint16_t SAMPDriver::GetFreeTextDrawID() {
+	for(int i=1;i<SAMP_MAX_TEXTDRAWS;i++) {
+		if(FindTextDrawByID(i) == NULL) {
+			return i;
+		}
 	}
 	return -1;
 }

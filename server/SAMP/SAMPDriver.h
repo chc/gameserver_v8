@@ -22,6 +22,9 @@ class SAMPPlayer;
 
 #define SAMP_MAX_VEHICLES 2000
 #define SAMP_MAX_PLAYERS 1000
+#define SAMP_MAX_TEXTDRAWS 2048
+#define SAMP_MAX_PLAYER_TEXTDRAW 256
+#define SAMP_TEXTDRAW_MAX_STRLEN 1024
 
 enum ESAMPRPC {
 	ESAMPRPC_SetPlayerPos = 12,	
@@ -43,8 +46,11 @@ enum ESAMPRPC {
 	ESAMPRPC_CreatePickup = 95,
 	ESAMPRPC_SendClientMessage = 93,
 	ESAMPRPC_ChatMessage = 101,
+	ESAMPRPC_EditTextDraw = 105,
 	ESAMPRPC_RequestClass = 128,
 	ESAMPRPC_RequestSpawn = 129,
+	ESAMPRPC_ShowTextDraw = 134,
+	ESAMPRPC_HideTextDraw = 135,
 	ESAMPRPC_ServerJoin = 137,
 	ESAMPRPC_SetPlayerSkin = 153,
 	ESAMPRPC_ExitVehicle = 154,
@@ -174,6 +180,42 @@ typedef struct {
 } SAMPPlayerClass;
 
 
+enum ETextDrawFlag {
+	SAMPTD_IsBox = 0x01,
+	SAMPTD_IsLeftAligned = 0x02,
+	SAMPTD_IsRightAligned = 0x04,
+	SAMPTD_IsCenterAligned = 0x08,
+	SAMPTD_IsProportional = 0x10,
+};
+
+typedef struct {
+	uint16_t id;
+	uint8_t flags;
+	float font_width;
+	float font_height;
+	uint32_t font_colour;
+	float box_width;
+	float box_height;
+	uint32_t box_colour;
+	uint8_t shadow;
+	uint8_t outline;
+	uint32_t background_colour;
+	uint8_t style;
+	uint8_t selectable;
+	float x;
+	float y;
+	uint16_t model;
+	uint16_t model_colours[2];
+	float rx;
+	float ry;
+	float rz;
+	float zoom;
+	char text[SAMP_TEXTDRAW_MAX_STRLEN];
+} SAMPTextDraw;
+
+
+
+
 class SAMPDriver : public INetDriver {
 public:
 	SAMPDriver(INetServer *server, const char *host, uint16_t port);
@@ -222,6 +264,10 @@ public:
 	void SendPassengerUpdate(SAMPPlayer *player, SAMPVehicle *car);
 	void SendAimSync(SAMPPlayer *player, SAMPAimSync *aim);
 	void SendBulletData(SAMPPlayer *player, SAMPBulletData *bullet);
+
+	SAMPTextDraw *FindTextDrawByID(uint16_t id);
+	SAMPTextDraw *CreateTextDraw();
+	uint16_t GetFreeTextDrawID();
 private:
 
 	//samp query stuff
@@ -234,6 +280,7 @@ private:
 	std::map<int32_t, SAMPPickup *> m_pickups;
 	std::map<int32_t, SAMP3DLabel *> m_3dlabels;
 	std::vector<SAMPVehicle *> m_vehicles;
+	std::vector<SAMPTextDraw *> m_textdraws;
 	int m_last_pickup_id;
 	int m_last_3dlabel_id;
 	

@@ -474,6 +474,9 @@ void SAMPRakPeer::m_client_command_handler(RakNet::BitStream *stream) {
 	printf("Cmd: %s\n",cmd);
 	CHCGameServer *server = (CHCGameServer *)mp_driver->getServer();
 	server->GetScriptInterface()->HandleEvent(CHCGS_ClientCommand, this, cmd);
+
+	SAMPTextDraw *td = mp_driver->CreateTextDraw();
+	ShowTextDraw(td);
 }
 void SAMPRakPeer::m_client_dialogresp_handler(RakNet::BitStream *stream) {
 	uint16_t dialogid;
@@ -582,6 +585,40 @@ void SAMPRakPeer::set_static_data(const char *data, int len) {
 	if(len > 0)
 		bs.Write(data, len);
 	send_bitstream(&bs);
+}
+void SAMPRakPeer::ShowTextDraw(SAMPTextDraw *td) {
+	RakNet::BitStream bs;
+	bs.Write(td->id);
+	bs.Write(td->flags);
+	bs.Write(td->font_width);
+	bs.Write(td->font_height);
+	bs.Write(td->font_colour);
+	bs.Write(td->box_width);
+	bs.Write(td->box_height);
+	bs.Write(td->box_colour);
+	bs.Write(td->shadow);
+	bs.Write(td->outline);
+	bs.Write(td->background_colour);
+	bs.Write(td->style);
+	bs.Write(td->selectable);
+	bs.Write(td->x);
+	bs.Write(td->y);
+	bs.Write(td->model);
+	bs.Write(td->rx);
+	bs.Write(td->ry);
+	bs.Write(td->rz);
+	bs.Write(td->zoom);
+	bs.Write(td->model_colours[0]);
+	bs.Write(td->model_colours[1]);
+	int len = strlen(td->text);
+	printf("%d - %s\n",len,td->text);
+	bs.Write((uint16_t)len);
+	bs.Write((char *)&td->text, len);
+
+	send_rpc(ESAMPRPC_ShowTextDraw, &bs);
+}
+void SAMPRakPeer::HideTextDraw(SAMPTextDraw *td) {
+
 }
 void SAMPRakPeer::think() {
 	//if(m_got_client_join)
