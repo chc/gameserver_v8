@@ -11,6 +11,7 @@ enum CHCGS_Events {
 	CHCGS_DialogResponse,
 	CHCGS_SpawnSelect,
 	CHCGS_ChatMessage,
+	CHCGS_UIClick,
 };
 typedef struct {
 	int dialog_id;

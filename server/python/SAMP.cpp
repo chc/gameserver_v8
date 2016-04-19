@@ -66,6 +66,39 @@ PyMODINIT_FUNC
 PyInit_SAMP(void)
 {
 	PyObject *m = PyModule_Create(&samp_module);
+
+	PyObject* temp_obj = PyLong_FromLong(0);
+
+	Py_INCREF(temp_obj);
+
+	PyModule_AddObject(m, "FRONTEND_FONT_GTASA_CORONA", (PyObject *)temp_obj);
+
+	temp_obj = PyLong_FromLong(1);
+
+	Py_INCREF(temp_obj);
+
+	PyModule_AddObject(m, "FRONTEND_FONT_GTASA_CLEAN", (PyObject *)temp_obj);
+
+
+	temp_obj = PyLong_FromLong(2);
+
+	Py_INCREF(temp_obj);
+
+	PyModule_AddObject(m, "FRONTEND_FONT_GTASA_WIDE", (PyObject *)temp_obj);
+
+	temp_obj = PyLong_FromLong(2);
+
+	Py_INCREF(temp_obj);
+
+	PyModule_AddObject(m, "FRONTEND_FONT_GTASA_FAT", (PyObject *)temp_obj);
+
+
+	temp_obj = PyLong_FromLong(4);
+
+	Py_INCREF(temp_obj);
+
+	PyModule_AddObject(m, "FRONTEND_FONT_GTASA_DFF_MODEL", (PyObject *)temp_obj);
+
 	return m;
 
 }

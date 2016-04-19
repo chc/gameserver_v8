@@ -153,8 +153,17 @@ void PythonScriptInterface::HandleEvent(int event_id, void *user, void *extra) {
 			break;
 		}
 		case CHCGS_ChatMessage: {
-			PyObject_CallMethod(tbl->connection_object, "OnChatMessagae", "s", extra);
+			PyObject_CallMethod(tbl->connection_object, "OnChatMessage", "s", extra);
 			break;
+		}
+		case CHCGS_UIClick: {
+			if(tbl->mouse_callback) {
+				PyObject *arglist = Py_BuildValue("Oi", tbl->connection_object,extra);
+				PyObject *ret = PyObject_CallObject(tbl->mouse_callback, arglist);
+				PyErr_Print();
+				Py_XDECREF(arglist);
+				Py_XDECREF(ret);
+			}
 		}
 	}
 }

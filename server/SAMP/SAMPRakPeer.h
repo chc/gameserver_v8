@@ -151,6 +151,8 @@ public:
 	
 	void ShowTextDraw(SAMPTextDraw *td);
 	void HideTextDraw(SAMPTextDraw *td);
+
+	void SelectTextDraw(uint32_t hover_colour, bool cancel = false);
 private:
 	void handle_raknet_packet(char *data, int len);
 	void process_bitstream(RakNet::BitStream *stream);
@@ -195,6 +197,7 @@ private:
 	void m_client_request_spawn(RakNet::BitStream *stream);
 	void m_client_request_class(RakNet::BitStream *stream);
 	void m_client_chat_message_handler(RakNet::BitStream *stream);
+	void m_textdraw_clicked_handler(RakNet::BitStream *stream);
 
 	//Misc RPC stuff
 	void send_game_init();

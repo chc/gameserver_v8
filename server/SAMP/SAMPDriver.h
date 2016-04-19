@@ -43,6 +43,7 @@ enum ESAMPRPC {
 	ESAMPRPC_SetPlayerArmour = 66,
 	ESAMPRPC_PutPlayerInVehicle = 70,
 	ESAMPRPC_ShowGameText = 73,
+	ESAMPRPC_SelectTextDraw = 83,
 	ESAMPRPC_CreatePickup = 95,
 	ESAMPRPC_SendClientMessage = 93,
 	ESAMPRPC_ChatMessage = 101,

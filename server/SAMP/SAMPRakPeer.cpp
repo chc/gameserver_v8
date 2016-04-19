@@ -15,7 +15,8 @@ RPCHandler SAMPRakPeer::s_rpc_handler[] = {
 	{ESAMPRPC_ExitVehicle, &SAMPRakPeer::m_client_exit_vehicle_handler},
 	{ESAMPRPC_RequestClass, &SAMPRakPeer::m_client_request_class},
 	{ESAMPRPC_RequestSpawn, &SAMPRakPeer::m_client_request_spawn},
-	{ESAMPRPC_ChatMessage, &SAMPRakPeer::m_client_chat_message_handler}
+	{ESAMPRPC_ChatMessage, &SAMPRakPeer::m_client_chat_message_handler},
+	{ESAMPRPC_SelectTextDraw, &SAMPRakPeer::m_textdraw_clicked_handler}
 };
 
 SAMPRakPeer::SAMPRakPeer(SAMPDriver *driver, struct sockaddr_in *address_info) {
@@ -386,7 +387,16 @@ void SAMPRakPeer::handle_incoming_rpc(RakNet::BitStream *stream) {
 			return;
 		}
 	}
-	printf("RPC not found: %d\n", rpcid);
+	printf("RPC not found: %d %d\n", rpcid, BITS_TO_BYTES(stream->GetNumberOfBitsUsed()));
+
+}
+void SAMPRakPeer::m_textdraw_clicked_handler(RakNet::BitStream *stream) {
+	uint16_t td_id;
+	stream->Read(td_id);
+	printf("Clicked TD: %d\n", td_id);
+
+	CHCGameServer *server = (CHCGameServer *)mp_driver->getServer();
+	server->GetScriptInterface()->HandleEvent(CHCGS_UIClick, this, (void *)td_id);
 
 }
 void SAMPRakPeer::m_client_enter_vehicle_handler(RakNet::BitStream *stream) {
@@ -619,6 +629,16 @@ void SAMPRakPeer::ShowTextDraw(SAMPTextDraw *td) {
 }
 void SAMPRakPeer::HideTextDraw(SAMPTextDraw *td) {
 
+}
+void SAMPRakPeer::SelectTextDraw(uint32_t hover_colour, bool cancel) {
+	RakNet::BitStream bs;
+	bs.Write(hover_colour);
+	if(cancel) {
+		bs.Write((uint8_t)0x00);
+	} else {
+		bs.Write((uint8_t)0x80); //flags??
+	}
+	send_rpc(ESAMPRPC_SelectTextDraw, &bs);
 }
 void SAMPRakPeer::think() {
 	//if(m_got_client_join)
