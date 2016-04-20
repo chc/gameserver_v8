@@ -391,12 +391,15 @@ void SAMPRakPeer::handle_incoming_rpc(RakNet::BitStream *stream) {
 
 }
 void SAMPRakPeer::m_textdraw_clicked_handler(RakNet::BitStream *stream) {
+	void *val = (void *)-1;
 	uint16_t td_id;
 	stream->Read(td_id);
-	printf("Clicked TD: %d\n", td_id);
+	if(td_id != (uint16_t)-1) {
+		val = (void *)td_id;
+	}
 
 	CHCGameServer *server = (CHCGameServer *)mp_driver->getServer();
-	server->GetScriptInterface()->HandleEvent(CHCGS_UIClick, this, (void *)td_id);
+	server->GetScriptInterface()->HandleEvent(CHCGS_UIClick, this, val);
 
 }
 void SAMPRakPeer::m_client_enter_vehicle_handler(RakNet::BitStream *stream) {
@@ -621,18 +624,24 @@ void SAMPRakPeer::ShowTextDraw(SAMPTextDraw *td) {
 	bs.Write(td->model_colours[0]);
 	bs.Write(td->model_colours[1]);
 	int len = strlen(td->text);
-	printf("%d - %s\n",len,td->text);
 	bs.Write((uint16_t)len);
 	bs.Write((char *)&td->text, len);
+
+	printf("Sending mdl: %d : %d [%d - %d]\n", td->model, td->style, td->model_colours[0], td->model_colours[1]);
 
 	send_rpc(ESAMPRPC_ShowTextDraw, &bs);
 }
 void SAMPRakPeer::HideTextDraw(SAMPTextDraw *td) {
-
+	RakNet::BitStream bs;
+	bs.Write((uint16_t)td->id);
+	send_rpc(ESAMPRPC_HideTextDraw, &bs);
 }
 void SAMPRakPeer::SelectTextDraw(uint32_t hover_colour, bool cancel) {
 	RakNet::BitStream bs;
-	bs.Write(hover_colour);
+	if(cancel) {
+		hover_colour = 0;
+	}
+	bs.Write(hover_colour);		
 	if(cancel) {
 		bs.Write((uint8_t)0x00);
 	} else {

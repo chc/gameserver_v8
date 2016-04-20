@@ -61,6 +61,8 @@ void samp_frontend_load_td_font(PyObject *font_data, SAMPTextDraw *td) {
 		PyObject* py_style = PyDict_GetItemString(font_data, "style");
 
 		PyObject* py_alignment = PyDict_GetItemString(font_data, "alignment");
+		
+		PyObject* py_model = PyDict_GetItemString(font_data, "model");
 
 		int alignment = 0;
 		if(py_alignment) {
@@ -89,6 +91,44 @@ void samp_frontend_load_td_font(PyObject *font_data, SAMPTextDraw *td) {
 				strcpy(td->text, str);
 				free((void *)str);
 			}
+		}
+
+		PyObject *model_colours = PyDict_GetItemString(font_data, "model_colours");
+		if(model_colours) {
+			PyObject *seq = PySequence_Fast(model_colours, "expected a sequence");
+			if(seq) {
+				Py_ssize_t len =  PyList_Size(seq);
+				for(int i=0;i<len;i++) {
+					td->model_colours[i] = PyLong_AsLong(PyList_GET_ITEM(seq, i));
+				}
+			}	
+		}
+
+		PyObject *model_zoom = PyDict_GetItemString(font_data, "model_camera_zoom");
+		if(model_zoom) {
+			td->zoom = PyFloat_AsDouble(model_zoom);
+		}
+
+		PyObject *rotation = PyDict_GetItemString(font_data, "rotation");
+		if(rotation) {
+			PyObject *seq = PySequence_Fast(rotation, "expected a sequence");
+			if(seq) {
+				PyObject *rot;
+				rot = PyList_GET_ITEM(seq, 0);
+				if(rot)
+					td->rx = PyFloat_AsDouble(rot);
+				rot = PyList_GET_ITEM(seq, 1);
+				if(rot)
+					td->ry = PyFloat_AsDouble(rot);
+				rot = PyList_GET_ITEM(seq, 2);
+				if(rot)
+					td->rz = PyFloat_AsDouble(rot);
+			}
+		}
+
+
+		if(py_model) {
+			td->model = PyLong_AsLong(py_model);
 		}
 		if(py_style) {
 			td->style = PyLong_AsLong(py_style);
@@ -207,8 +247,8 @@ PyObject *frontend_activatemouse(PyObject *self, PyObject *args) {
 		Py_RETURN_NONE;
 	}
 	if(PyDict_Check(options)) {
-		PyObject *obj = PyDict_GetItemString(options, "enabled");
-		enabled = obj == Py_True;
+		PyObject *obj;
+		enabled = PyDict_GetItemString(options, "enabled") == Py_True;
 		obj = PyDict_GetItemString(options, "hover_colour");
 		if(obj)
 			hover_colour = PyLong_AsUnsignedLong(obj);
@@ -217,10 +257,11 @@ PyObject *frontend_activatemouse(PyObject *self, PyObject *args) {
 	}
 	ClientInfoTable *tbl = gbl_pi_interface->findClientByConnObj(conn);
     SAMPDriver *driver = gbl_pi_interface->getGameServer()->getSAMPDriver();
-	tbl->user->SelectTextDraw(hover_colour, status == Py_True);
+	tbl->user->SelectTextDraw(hover_colour, !enabled);
 	Py_XDECREF(tbl->mouse_callback);
 	tbl->mouse_callback = callback;
-	Py_INCREF(callback);
+	if(callback)
+		Py_INCREF(callback);
 	Py_RETURN_NONE;
 }
 static PyMethodDef FrontendMethods[] = {

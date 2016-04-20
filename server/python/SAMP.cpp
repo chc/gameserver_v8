@@ -86,7 +86,7 @@ PyInit_SAMP(void)
 
 	PyModule_AddObject(m, "FRONTEND_FONT_GTASA_WIDE", (PyObject *)temp_obj);
 
-	temp_obj = PyLong_FromLong(2);
+	temp_obj = PyLong_FromLong(3);
 
 	Py_INCREF(temp_obj);
 
@@ -94,6 +94,12 @@ PyInit_SAMP(void)
 
 
 	temp_obj = PyLong_FromLong(4);
+
+	Py_INCREF(temp_obj);
+
+	PyModule_AddObject(m, "FRONTEND_FONT_GTASA_TXD_TEXTURE", (PyObject *)temp_obj);
+
+	temp_obj = PyLong_FromLong(5);
 
 	Py_INCREF(temp_obj);
 

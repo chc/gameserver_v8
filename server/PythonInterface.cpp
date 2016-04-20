@@ -158,7 +158,12 @@ void PythonScriptInterface::HandleEvent(int event_id, void *user, void *extra) {
 		}
 		case CHCGS_UIClick: {
 			if(tbl->mouse_callback) {
-				PyObject *arglist = Py_BuildValue("Oi", tbl->connection_object,extra);
+				PyObject *arglist;
+				if(extra == (void *)-1) {
+					arglist = Py_BuildValue("Os", tbl->connection_object, NULL);
+				} else {
+					arglist = Py_BuildValue("Oi", tbl->connection_object,extra);
+				}
 				PyObject *ret = PyObject_CallObject(tbl->mouse_callback, arglist);
 				PyErr_Print();
 				Py_XDECREF(arglist);
