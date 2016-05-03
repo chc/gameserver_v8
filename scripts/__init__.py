@@ -26,14 +26,83 @@ HUMAN_CLASSES = [
 	{'skin': 280, 'name': 'Cop', 'weapons': DEFAULT_WEAPONS, 'description': 'A normal ped', 'health': 100.0, 'armour': 100.0},
 
 ]
+WEAPON_GTASA_DATA = {
+	0: {'model': 1575, 'ammo': 1, 'name': 'Fist'},
+	1: {'model': 331, 'ammo': 1, 'name': 'Brass Knuckles'},
+	2: {'model': 333, 'ammo': 1, 'name': 'Golf Club'}, 
+	3: {'model': 334, 'ammo': 1, 'name': 'Nightstick'}, 
+	4: {'model': 335, 'ammo': 1, 'name': 'Knife'}, 
+	5: {'model': 336, 'ammo': 1, 'name': 'Baseball Bat'},
+	6: {'model': 337, 'ammo': 1, 'name': 'Shovel'},
+	7: {'model': 338, 'ammo': 1, 'name': 'Pool cue'},
+	8: {'model': 339, 'ammo': 1, 'name': 'Katana'},
+	9: {'model': 341, 'ammo': 1, 'name': 'Chainsaw'},
+	10: {'model': 321, 'ammo': 1, 'name': 'Purple Dildo'},
+	11: {'model': 322, 'ammo': 1, 'name': 'Dildo'},
+	12: {'model': 323, 'ammo': 1, 'name': 'Vibrator'},
+	13: {'model': 324, 'ammo': 1, 'name': 'Small Vibrator'},
+	14: {'model': 325, 'ammo': 1, 'name': 'Flowers'},
+	15: {'model': 326, 'ammo': 1, 'name': 'Cane'},
+	16: {'model': 342, 'ammo': 1, 'name': 'Grenade'},
+	17: {'model': 343, 'ammo': 1, 'name': 'Tear Gas'},
+	18: {'model': 344, 'ammo': 1, 'name': 'Molotov Cocktail'},
+	22: {'model': 346, 'ammo': 1, 'name': '9mm'},
+	23: {'model': 347, 'ammo': 1, 'name': 'Silenced 9mm'},
+	24: {'model': 348, 'ammo': 1, 'name': 'Deagle'},
+	25: {'model': 349, 'ammo': 1, 'name': 'Shotgun'},
+	26: {'model': 350, 'ammo': 1, 'name': 'Sawnoff Shotgun'},
+	27: {'model': 351, 'ammo': 1, 'name': 'SPAS12'},
+	28: {'model': 352, 'ammo': 1, 'name': 'UZI'},
+	29: {'model': 353, 'ammo': 1, 'name': 'MP5'},
+	30: {'model': 355, 'ammo': 1, 'name': 'AK-47'},
+	31: {'model': 356, 'ammo': 1, 'name': 'M4'},
+	32: {'model': 372, 'ammo': 1, 'name': 'Tec9'},
+	33: {'model': 357, 'ammo': 1, 'name': 'Country Rifle'},
+	34: {'model': 358, 'ammo': 1, 'name': 'Sniper Rifle'},
+	35: {'model': 359, 'ammo': 1, 'name': 'RPG'},
+	36: {'model': 360, 'ammo': 1, 'name': 'HS Rocket'},
+	37: {'model': 361, 'ammo': 1, 'name': 'Flamethrower'},
+	38: {'model': 362, 'ammo': 1, 'name': 'Minigun'},
+	39: {'model': 363, 'ammo': 1, 'name': 'Satchel Charge'},
+	40: {'model': 364, 'ammo': 1, 'name': 'Detonator'},
+	41: {'model': 365, 'ammo': 1, 'name': 'Spraycan'},
+	42: {'model': 366, 'ammo': 1, 'name': 'Fire Extinguisher'},
+	43: {'model': 367, 'ammo': 1, 'name': 'Camera'},
+	44: {'model': 368, 'ammo': 1, 'name': 'Night Vision Goggles'},
+	45: {'model': 369, 'ammo': 1, 'name': 'Thermal Goggles'},
+	46: {'model': 371, 'ammo': 1, 'name': 'parachute'},
+}
 
+WEAPON_CLASS_PRIMARY = {'class_id': 0, 'weapons': [
+	[30, 100],
+	[31, 100],
+	[33, 100],
+	[34, 100],
+	[35, 100],
+	[37, 1000],
+	[38, 1000],
+]}
+WEAPON_CLASS_SECONDARY = {'class_id': 1, 'weapons': [
+	[22, 100],
+	[23, 100],
+	[24, 100],
+	[25, 100],
+	[26, 100],
+	[27, 100],
+	[28, 100],
+	[29, 100],
+	[32, 100],
+]}
+WEAPON_CLASS_MELEE = {'class_id': 2, 'weapons': [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]}
 
 COLOUR_UI_BACKGROUND = 0x660000FF
 COLOUR_UI_PRIMARY_TEXT = 0xFF00FFFF
 COLOUR_UI_CONFIRMATION_TEXT = 0x00FF00FF
 COLOUR_UI_BUTTON_BACKGROUND = 0x000000FF
+
 class WelcomeUI():
-	def __init__(self):
+	def __init__(self, connection):
+		self.connection = connection
 		self.PLAY_BUTTON_FONT_OPTIONS = {'style': SAMP.FRONTEND_FONT_GTASA_CLEAN, 'text': 'Enter Game Play', 'proportional': True, 'alignment': Frontend.TEXT_ALIGNMENT_LEFT}
 		self.play_button = Frontend.CreateUIElement({'font': self.PLAY_BUTTON_FONT_OPTIONS, 'x': 200.0, 'y': 150.0, 'selectable': True, 'box': True, 'box_width': 300.0, 'box_height': 40.0, 'box_colour': COLOUR_UI_BACKGROUND})
 				
@@ -51,15 +120,15 @@ class WelcomeUI():
 	def OnClick(self, conn, element):
 		if element == self.play_button:
 			#conn.Entity.Spawn({'model': 211, 'position': [0,0,5]})
-			self.Hide(conn)
-			the_class_sel_ui.Display(conn)
-		conn.SendMessage(0xFF00FFFF, "Got click: {}".format(element))
-	def Display(self, conn):
-		Frontend.DisplayUIElements(conn, self.UIElements)
-		Frontend.ActivateMouse(conn, {'enabled': True, 'hover_colour': COLOUR_UI_CONFIRMATION_TEXT, 'callback': self.OnClick})
-	def Hide(self, conn):
-		Frontend.ActivateMouse(conn, {'enabled': False})
-		Frontend.HideUIElements(conn, self.UIElements)
+			self.Hide()
+			self.connection.class_sel_ui.Display()
+		self.connection.SendMessage(0xFF00FFFF, "Got click: {}".format(element))
+	def Display(self):
+		Frontend.DisplayUIElements(self.connection, self.UIElements)
+		Frontend.ActivateMouse(self.connection, {'enabled': True, 'hover_colour': COLOUR_UI_CONFIRMATION_TEXT, 'callback': self.OnClick})
+	def Hide(self):
+		Frontend.ActivateMouse(self.connection, {'enabled': False})
+		Frontend.HideUIElements(self.connection, self.UIElements)
 class LabeledUIPreviewElement():
 	#"label" dict keys - [{'colour': 0xFF00FFFF, 'text': 'label string']
 	def __init__(self, options):
@@ -71,70 +140,165 @@ class LabeledUIPreviewElement():
 		if not 'zoom' in options:
 			options['zoom'] = 1.0
 
+		if 'identifier' in options:
+			self.identifier = options['identifier']
+
+		if 'connection' in options:
+			self.connection = options['connection']
+
+		if 'callback' in options:
+			self.callback = options['callback']
+
 		self.MODEL_PREVIEW_FONT_OPTIONS = {'colour': COLOUR_UI_PRIMARY_TEXT, 'style': SAMP.FRONTEND_FONT_GTASA_DFF_MODEL, 'proportional': True, 'model': options['model'], 'model_colours': options['colours'], 'model_camera_zoom': options['zoom'], 'rotation': options['rotation'], 'alignment': Frontend.TEXT_ALIGNMENT_CENTER}
 		self.model_preview = Frontend.CreateUIElement({'font': self.MODEL_PREVIEW_FONT_OPTIONS, 'x': options['x'], 'y': options['y'], 'selectable': True, 'box': True, 'box_width': 75.0, 'box_height': 75.0, 'box_colour': COLOUR_UI_BACKGROUND})
-	def Display(self, conn):
-		print("asdasd")
-		Frontend.DisplayUIElements(conn, [self.model_preview])
+	def Display(self):
+		Frontend.DisplayUIElements(self.connection, [self.model_preview])
+	def SetModel(self, model):
+		print("Model: {}".format(model))
 	def HandleClick(self, conn, element):
 		if element == self.model_preview:
-			conn.SendMessage(0xFFFFFFFF, "asdasdasd")
 			return True
 		return False
+	def OwnsElement(self, element):
+		return element == self.model_preview
+	def Hide(self, conn):
+		Frontend.HideUIElements(conn, [self.model_preview])
+class WeaponSelectUI():
+	MAX_ITEM_ROWS = 5
+	MAX_ITEM_COLUMNS = 5
+	def __init__(self, class_info, connection):
+		self.weapon_buttons = {}
+		index = 0
+		self.connection = connection
+		for item in class_info['weapons']:
+			if type(item) is list:
+				self.weapon_buttons[item[0]] = self.CreateWeaponTD(WEAPON_GTASA_DATA[item[0]], index, item[0], connection)
+			else:
+				self.weapon_buttons[item] = self.CreateWeaponTD(WEAPON_GTASA_DATA[item], index, item, connection)
+			index += 1
+	def CreateWeaponTD(self, item, index, wep_id, connection):
+		options = {}
+		x_index = index % 5
+		y_index = ((int)(index / 5))
+		options['model'] = item['model']
+		options['x'] = 175.0 + (x_index * 80.0)
+		y_pos = 15.0
+		y_pos += (y_index * 80.0)
+		options['y'] = y_pos
+
+		options['zoom'] = 1.5
+
+		options['identifier'] = wep_id
+		options['connection'] = connection
+		element = LabeledUIPreviewElement(options)
+		return element
+	def OnClick(self, conn, element):
+		for wep_id in self.weapon_buttons:
+			if self.weapon_buttons[wep_id].OwnsElement(element):
+				#conn.SendMessage(0xFFFFFFFF, "Clicked: {}".format(WEAPON_GTASA_DATA[wep_id]['name']))
+				self.click_callback(conn, self.index, WEAPON_GTASA_DATA[wep_id])
+				self.Hide(conn)
+				return
+	def Display(self, callback):
+		for wep_id in self.weapon_buttons:
+			self.weapon_buttons[wep_id].Display()
+		self.click_callback = callback
+		self.connection.SendMessage(0xFFFFFFFF, "weapon select display")
+		Frontend.ActivateMouse(self.connection, {'enabled': True, 'hover_colour': COLOUR_UI_CONFIRMATION_TEXT, 'callback': self.OnClick})
+	def Hide(self, conn):
+		for wep_id in self.weapon_buttons:
+			self.weapon_buttons[wep_id].Hide(conn)
+
 class ClassSelectionUI():
-	def __init__(self):
+	def __init__(self, connection):
+
+		self.connection = connection
 
 		#menu stage 1 - class selection
 		self.PLAY_BUTTON_FONT_OPTIONS = {'style': SAMP.FRONTEND_FONT_GTASA_CLEAN, 'text': 'Zombie', 'proportional': True, 'alignment': Frontend.TEXT_ALIGNMENT_LEFT}
-		self.zombie_button = Frontend.CreateUIElement({'font': self.PLAY_BUTTON_FONT_OPTIONS, 'x': 200.0, 'y': 150.0, 'selectable': True, 'box': True, 'box_width': 300.0, 'box_height': 40.0, 'box_colour': COLOUR_UI_BACKGROUND})
+		self.zombie_button = Frontend.CreateUIElement({'connection': connection, 'font': self.PLAY_BUTTON_FONT_OPTIONS, 'x': 200.0, 'y': 150.0, 'selectable': True, 'box': True, 'box_width': 300.0, 'box_height': 40.0, 'box_colour': COLOUR_UI_BACKGROUND})
 				
 		self.NEW_PLAYER_FONT_OPTIONS ={'style': SAMP.FRONTEND_FONT_GTASA_CLEAN, 'text': 'Human', 'proportional': True, 'alignment': Frontend.TEXT_ALIGNMENT_LEFT} #
-		self.human_button = Frontend.CreateUIElement({'font': self.NEW_PLAYER_FONT_OPTIONS, 'x': 400.0, 'y': 150.0, 'selectable': True, 'box': True, 'box_width': 500.0, 'box_height': 40.0, 'box_colour': COLOUR_UI_BACKGROUND})
+		self.human_button = Frontend.CreateUIElement({'connection': connection, 'font': self.NEW_PLAYER_FONT_OPTIONS, 'x': 400.0, 'y': 150.0, 'selectable': True, 'box': True, 'box_width': 500.0, 'box_height': 40.0, 'box_colour': COLOUR_UI_BACKGROUND})
 
 		self.BACKGROUND_FONT_OPTIONS = {'width': 1000.0, 'height': 1000.0}
-		self.background = Frontend.CreateUIElement({'box_colour': COLOUR_UI_BACKGROUND, 'box': True, 'x': 0.0, 'y': 0.0, 'box_width': 1000.0, 'box_height': 1000.0, 'font': self.BACKGROUND_FONT_OPTIONS})
+		self.background = Frontend.CreateUIElement({'connection': connection, 'box_colour': COLOUR_UI_BACKGROUND, 'box': True, 'x': 0.0, 'y': 0.0, 'box_width': 1000.0, 'box_height': 1000.0, 'font': self.BACKGROUND_FONT_OPTIONS})
 
 		self.HEADER_FONT_OPTIONS = {'text': 'Select your desired class', 'style': SAMP.FRONTEND_FONT_GTASA_CORONA, 'colour': COLOUR_UI_PRIMARY_TEXT, 'proportional': True}
-		self.header = Frontend.CreateUIElement({'font': self.HEADER_FONT_OPTIONS, 'x': 200.0, 'y': 100.0})
+		self.header = Frontend.CreateUIElement({'connection': connection, 'font': self.HEADER_FONT_OPTIONS, 'x': 200.0, 'y': 100.0})
 
-		self.ClassSelectionUI = [self.background, self.header, self.human_button, self.zombie_button]
+		self.ui = [self.background, self.header, self.human_button, self.zombie_button]
 
 
 		#menu stage 2 - weapon selection
-		self.primary_weapon_uielm = LabeledUIPreviewElement({'x': 100.0, 'y': 150.0, 'model': 348, 'title': 'Gun', 'footer': 'heii', 'zoom': 1.5 })
+		self.primary_weapon_uielm = LabeledUIPreviewElement({'connection': connection, 'x': 100.0, 'y': 150.0, 'model': 348, 'title': 'Gun', 'footer': 'heii', 'zoom': 1.5, 'callback': self.OnPrimaryWeaponSelect })
+		self.primary_weapon_uielm.index = 0
 		
-		self.secondary_weapon_uielm = LabeledUIPreviewElement({'x': 250.0, 'y': 150.0, 'model': 353, 'title': 'Gun', 'footer': 'heii', 'zoom': 1.5 })
-		self.melee_weapon_uielm = LabeledUIPreviewElement({'x': 450.0, 'y': 150.0, 'model': 334, 'title': 'Gun', 'footer': 'heii', 'zoom': 1.5 })
+		self.secondary_weapon_uielm = LabeledUIPreviewElement({'connection': connection, 'x': 250.0, 'y': 150.0, 'model': 353, 'title': 'Gun', 'footer': 'heii', 'zoom': 1.5, 'callback': self.OnPrimaryWeaponSelect })
+		self.secondary_weapon_uielm.index = 1
+
+		self.melee_weapon_uielm = LabeledUIPreviewElement({'connection': connection, 'x': 450.0, 'y': 150.0, 'model': 334, 'title': 'Gun', 'footer': 'heii', 'zoom': 1.5, 'callback': self.OnPrimaryWeaponSelect })
+		self.melee_weapon_uielm.index = 2
 
 		self.stage_2_menu = [self.primary_weapon_uielm, self.secondary_weapon_uielm, self.melee_weapon_uielm]
+
+		self.stage = 0
+
+		self.weapon_select_ui_elements = []
+
+		the_weapon_select_menus = [WEAPON_CLASS_PRIMARY, WEAPON_CLASS_SECONDARY, WEAPON_CLASS_MELEE]
+		index = 0
+		for weapon_data in the_weapon_select_menus:
+			weapon_ui = WeaponSelectUI(weapon_data, self.connection)
+			weapon_ui.index = index
+			index += 1
+			self.weapon_select_ui_elements.append(weapon_ui)
+	def OnPrimaryWeaponSelect(self, conn, index, weapon):
+		print("CB called.. {} {}".format(index, weapon))
+		self.stage_2_menu[index].SetModel(weapon['model'])
+		#self.EnterWeaponSelMenu(conn)
 	def OnClick(self, conn, element):
 		if element == None:
 			return 0
-		conn.SendMessage(0xFF00FFFF, "class sel click: {}".format(element))
+		self.connection.SendMessage(0xFF00FFFF, "class sel click: {}".format(element))
+		clicked_element = None
 		for ui_elem in  self.stage_2_menu:
-			if ui_elem.HandleClick(conn, element):
-				conn.SendMessage(COLOUR_UI_PRIMARY_TEXT,"showing ui element")
-				return
+			if ui_elem.HandleClick(self.connection, element):
+				clicked_element = ui_elem
+		if clicked_element != None:
+			conn.SendMessage(COLOUR_UI_PRIMARY_TEXT,"showing ui element")
+			self.stage = 2
+			self.Hide()
+			print("Display: weapon set index: {} {}".format(clicked_element.index, self.stage))
+			self.weapon_select_ui_elements[clicked_element.index].Display(clicked_element.callback)
+			return
+			#clicked_element.Display()
 		if element  == self.human_button:
-			conn.Entity.IsHuman = True
+			self.connection.Entity.IsHuman = True
 		else:
-			conn.Entity.IsHuman = False
-		self.Hide(conn)
-		self.EnterWeaponSelMenu(conn)
-	def EnterWeaponSelMenu(self, conn):
-		conn.SendMessage(0xFFFFFFFF, "Enter weapon sel menu")
+			self.connection.Entity.IsHuman = False
+		self.Hide()
+		self.EnterWeaponSelMenu()
+	def EnterWeaponSelMenu(self):
+		self.stage = 2
+		self.connection.SendMessage(0xFFFFFFFF, "Enter weapon sel menu")
 		for ui_elem in self.stage_2_menu:
-			ui_elem.Display(conn)
-		Frontend.ActivateMouse(conn, {'enabled': True, 'hover_colour': COLOUR_UI_CONFIRMATION_TEXT, 'callback': self.OnClick})
-	def Display(self, conn):
-		Frontend.DisplayUIElements(conn, self.ClassSelectionUI)
-		Frontend.ActivateMouse(conn, {'enabled': True, 'hover_colour': COLOUR_UI_CONFIRMATION_TEXT, 'callback': self.OnClick})
-	def Hide(self, conn):
-		Frontend.ActivateMouse(conn, {'enabled': False})
-		Frontend.HideUIElements(conn, self.ClassSelectionUI)
+			ui_elem.Display()
+		Frontend.ActivateMouse(self.connection, {'enabled': True, 'hover_colour': COLOUR_UI_CONFIRMATION_TEXT, 'callback': self.OnClick})
+	def Display(self):
+		self.stage = 1
+		Frontend.DisplayUIElements(self.connection, self.ui)
+		Frontend.ActivateMouse(self.connection, {'enabled': True, 'hover_colour': COLOUR_UI_CONFIRMATION_TEXT, 'callback': self.OnClick})
+	def Hide(self):
+		if self.stage == 2:
+			for ui_elem in self.stage_2_menu:
+				ui_elem.Hide(self.connection)
+		else:
+			Frontend.HideUIElements(self.connection, self.ui)
+		self.stage = 0
+		Frontend.ActivateMouse(self.connection, {'enabled': False})
 
-the_class_sel_ui = ClassSelectionUI()
-the_welcome_ui = WelcomeUI()
+
 #alle entities extend from this
 class GenericEntity(CoreServer.BaseEntity):
 	def __init__(self):
@@ -156,6 +320,9 @@ class SAMPHandler(CoreServer.Connection, CoreServer.CommandHandler):
 		SAMP.SetNumSpawnClasses(self, 5)
 		self.Entity = PlayerEntity(self)
 		self.SetEntity(self.Entity)
+
+		self.class_sel_ui = ClassSelectionUI(self)
+		self.welcome_ui = WelcomeUI(self)
 	
 		self.Entity.Health = 100
 	def OnSpawnSelect(self, index):
@@ -165,7 +332,7 @@ class SAMPHandler(CoreServer.Connection, CoreServer.CommandHandler):
 
 		if not self.GotClassSelect:
 			self.GotClassSelect = True
-			the_welcome_ui.Display(self)
+			self.welcome_ui.Display()
 	def OnChatMessage(self, message):
 		print("Got msg!")
 
