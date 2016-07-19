@@ -214,6 +214,25 @@ PyObject *frontend_displayuielements(PyObject *self, PyObject* args) {
 	}
 	Py_RETURN_NONE;
 }
+
+PyObject *frontend_setuielementmodel(PyObject *self, PyObject* args) {
+	PyObject *dict;
+   	SAMPDriver *driver = gbl_pi_interface->getGameServer()->getSAMPDriver();
+    if (!PyArg_ParseTuple(args, "O", &dict))
+        Py_RETURN_NONE;
+    if(PyDict_Check(dict)) {
+    	PyObject *py_model = PyDict_GetItemString(dict, "model");
+    	PyObject *py_element = PyDict_GetItemString(dict, "element");
+
+    	if(py_model && py_element) {
+    		int id = PyLong_AsLong(py_element);
+    		SAMPTextDraw *td = driver->FindTextDrawByID(id);
+    		td->model = PyLong_AsLong(py_model);
+    	}
+
+    }
+	Py_RETURN_NONE;
+}
 PyObject *frontend_hideuielements(PyObject *self, PyObject *args) {
 	PyObject *arr, *conn;
     if (!PyArg_ParseTuple(args, "OO", &conn, &arr))
@@ -271,6 +290,7 @@ static PyMethodDef FrontendMethods[] = {
     {"DisplayUIElements", frontend_displayuielements, METH_VARARGS, "Displays UI arguments"},
     {"HideUIElements", frontend_hideuielements, METH_VARARGS, "Displays UI arguments"},
     {"ActivateMouse", frontend_activatemouse, METH_VARARGS, "Sets the mouses activity state"},
+    {"SetUIElementModel", frontend_setuielementmodel, METH_VARARGS, "Sets a UI element model"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 

@@ -155,14 +155,15 @@ class LabeledUIPreviewElement():
 		Frontend.DisplayUIElements(self.connection, [self.model_preview])
 	def SetModel(self, model):
 		print("Model: {}".format(model))
+		Frontend.SetUIElementModel({'model': model, 'element': self.model_preview})
 	def HandleClick(self, conn, element):
 		if element == self.model_preview:
 			return True
 		return False
 	def OwnsElement(self, element):
 		return element == self.model_preview
-	def Hide(self, conn):
-		Frontend.HideUIElements(conn, [self.model_preview])
+	def Hide(self):
+		Frontend.HideUIElements(self.connection, [self.model_preview])
 class WeaponSelectUI():
 	MAX_ITEM_ROWS = 5
 	MAX_ITEM_COLUMNS = 5
@@ -197,7 +198,7 @@ class WeaponSelectUI():
 			if self.weapon_buttons[wep_id].OwnsElement(element):
 				#conn.SendMessage(0xFFFFFFFF, "Clicked: {}".format(WEAPON_GTASA_DATA[wep_id]['name']))
 				self.click_callback(conn, self.index, WEAPON_GTASA_DATA[wep_id])
-				self.Hide(conn)
+				self.Hide()
 				return
 	def Display(self, callback):
 		for wep_id in self.weapon_buttons:
@@ -205,9 +206,9 @@ class WeaponSelectUI():
 		self.click_callback = callback
 		self.connection.SendMessage(0xFFFFFFFF, "weapon select display")
 		Frontend.ActivateMouse(self.connection, {'enabled': True, 'hover_colour': COLOUR_UI_CONFIRMATION_TEXT, 'callback': self.OnClick})
-	def Hide(self, conn):
+	def Hide(self):
 		for wep_id in self.weapon_buttons:
-			self.weapon_buttons[wep_id].Hide(conn)
+			self.weapon_buttons[wep_id].Hide()
 
 class ClassSelectionUI():
 	def __init__(self, connection):
@@ -240,7 +241,15 @@ class ClassSelectionUI():
 		self.melee_weapon_uielm = LabeledUIPreviewElement({'connection': connection, 'x': 450.0, 'y': 150.0, 'model': 334, 'title': 'Gun', 'footer': 'heii', 'zoom': 1.5, 'callback': self.OnPrimaryWeaponSelect })
 		self.melee_weapon_uielm.index = 2
 
+		self.SPAWN_BUTTON_FONT_OPTIONS = {'style': SAMP.FRONTEND_FONT_GTASA_CLEAN, 'text': 'Spawn', 'proportional': True, 'alignment': Frontend.TEXT_ALIGNMENT_LEFT} 
+		self.spawn_button = Frontend.CreateUIElement({'connection': connection, 'font': self.SPAWN_BUTTON_FONT_OPTIONS, 'x': 100.0, 'y': 400.0, 'selectable': True, 'box': True, 'box_width': 150.0, 'box_height': 40.0, 'box_colour': COLOUR_UI_BACKGROUND})
+
+		self.RETURN_BUTTON_FONT_OPTIONS = {'style': SAMP.FRONTEND_FONT_GTASA_CLEAN, 'text': 'Return to menu', 'proportional': True, 'alignment': Frontend.TEXT_ALIGNMENT_LEFT} 
+		self.return_button = Frontend.CreateUIElement({'connection': connection, 'font': self.RETURN_BUTTON_FONT_OPTIONS, 'x': 250.0, 'y': 400.0, 'selectable': True, 'box': True, 'box_width': 385.0, 'box_height': 40.0, 'box_colour': COLOUR_UI_BACKGROUND})
+
 		self.stage_2_menu = [self.primary_weapon_uielm, self.secondary_weapon_uielm, self.melee_weapon_uielm]
+
+		self.action_buttons = [self.spawn_button, self.return_button]
 
 		self.stage = 0
 
@@ -256,7 +265,8 @@ class ClassSelectionUI():
 	def OnPrimaryWeaponSelect(self, conn, index, weapon):
 		print("CB called.. {} {}".format(index, weapon))
 		self.stage_2_menu[index].SetModel(weapon['model'])
-		#self.EnterWeaponSelMenu(conn)
+		self.Hide()
+		self.EnterWeaponSelMenu()
 	def OnClick(self, conn, element):
 		if element == None:
 			return 0
@@ -265,6 +275,10 @@ class ClassSelectionUI():
 		for ui_elem in  self.stage_2_menu:
 			if ui_elem.HandleClick(self.connection, element):
 				clicked_element = ui_elem
+		if element == self.spawn_button:
+			self.Hide()
+			self.connection.Entity.Spawn({})
+			return
 		if clicked_element != None:
 			conn.SendMessage(COLOUR_UI_PRIMARY_TEXT,"showing ui element")
 			self.stage = 2
@@ -284,6 +298,7 @@ class ClassSelectionUI():
 		self.connection.SendMessage(0xFFFFFFFF, "Enter weapon sel menu")
 		for ui_elem in self.stage_2_menu:
 			ui_elem.Display()
+		Frontend.DisplayUIElements(self.connection, self.action_buttons)
 		Frontend.ActivateMouse(self.connection, {'enabled': True, 'hover_colour': COLOUR_UI_CONFIRMATION_TEXT, 'callback': self.OnClick})
 	def Display(self):
 		self.stage = 1
@@ -292,7 +307,9 @@ class ClassSelectionUI():
 	def Hide(self):
 		if self.stage == 2:
 			for ui_elem in self.stage_2_menu:
-				ui_elem.Hide(self.connection)
+				ui_elem.Hide()
+
+			Frontend.HideUIElements(self.connection, self.action_buttons)
 		else:
 			Frontend.HideUIElements(self.connection, self.ui)
 		self.stage = 0
@@ -307,6 +324,7 @@ class GenericEntity(CoreServer.BaseEntity):
 
 class PlayerEntity(GenericEntity):
 	def __init__(self, connection):
+		print("Begin make entity")
 		super(PlayerEntity, self).__init__()
 
 		self.connection = connection
