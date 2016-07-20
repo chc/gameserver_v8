@@ -245,20 +245,23 @@ PyObject *pyi_baseentity_spawn(gs_BaseEntityObject *self, PyObject *args)
 			}
 			if(py_weapons) {
 				int idx = 0;
-				PyObject *wep_data = PyList_GET_ITEM(py_weapons, idx);
-				if(wep_data) {
+				Py_ssize_t list_len = PyList_Size(py_weapons);
+				PyObject *wep_data = NULL;
+				
+				if(list_len >= 1) {
+					wep_data = PyList_GET_ITEM(py_weapons, idx);
 					weapons[idx] = PyLong_AsLong(PyDict_GetItemString(wep_data, "id"));
 					ammo[idx] = PyLong_AsLong(PyDict_GetItemString(wep_data, "ammo"));
 					idx++;
 				}
-				wep_data = PyList_GET_ITEM(py_weapons, idx);
-				if(wep_data) {
+				if(wep_data && list_len >= 2) {
+					wep_data = PyList_GET_ITEM(py_weapons, idx);
 					weapons[idx] = PyLong_AsLong(PyDict_GetItemString(wep_data, "id"));
 					ammo[idx] = PyLong_AsLong(PyDict_GetItemString(wep_data, "ammo"));
 					idx++;
 				}
-				wep_data = PyList_GET_ITEM(py_weapons, idx);
-				if(wep_data) {
+				if(wep_data && list_len >= 3) {
+					wep_data = PyList_GET_ITEM(py_weapons, idx);
 					weapons[idx] = PyLong_AsLong(PyDict_GetItemString(wep_data, "id"));
 					ammo[idx] = PyLong_AsLong(PyDict_GetItemString(wep_data, "ammo"));
 					idx++;
