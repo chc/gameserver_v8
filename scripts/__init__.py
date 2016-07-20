@@ -43,31 +43,31 @@ WEAPON_GTASA_DATA = {
 	13: {'model': 324, 'ammo': 1, 'name': 'Small Vibrator'},
 	14: {'model': 325, 'ammo': 1, 'name': 'Flowers'},
 	15: {'model': 326, 'ammo': 1, 'name': 'Cane'},
-	16: {'model': 342, 'ammo': 1, 'name': 'Grenade'},
-	17: {'model': 343, 'ammo': 1, 'name': 'Tear Gas'},
-	18: {'model': 344, 'ammo': 1, 'name': 'Molotov Cocktail'},
-	22: {'model': 346, 'ammo': 1, 'name': '9mm'},
-	23: {'model': 347, 'ammo': 1, 'name': 'Silenced 9mm'},
-	24: {'model': 348, 'ammo': 1, 'name': 'Deagle'},
-	25: {'model': 349, 'ammo': 1, 'name': 'Shotgun'},
-	26: {'model': 350, 'ammo': 1, 'name': 'Sawnoff Shotgun'},
-	27: {'model': 351, 'ammo': 1, 'name': 'SPAS12'},
-	28: {'model': 352, 'ammo': 1, 'name': 'UZI'},
-	29: {'model': 353, 'ammo': 1, 'name': 'MP5'},
-	30: {'model': 355, 'ammo': 1, 'name': 'AK-47'},
-	31: {'model': 356, 'ammo': 1, 'name': 'M4'},
-	32: {'model': 372, 'ammo': 1, 'name': 'Tec9'},
-	33: {'model': 357, 'ammo': 1, 'name': 'Country Rifle'},
-	34: {'model': 358, 'ammo': 1, 'name': 'Sniper Rifle'},
-	35: {'model': 359, 'ammo': 1, 'name': 'RPG'},
-	36: {'model': 360, 'ammo': 1, 'name': 'HS Rocket'},
-	37: {'model': 361, 'ammo': 1, 'name': 'Flamethrower'},
-	38: {'model': 362, 'ammo': 1, 'name': 'Minigun'},
+	16: {'model': 342, 'ammo': 10, 'name': 'Grenade'},
+	17: {'model': 343, 'ammo': 15, 'name': 'Tear Gas'},
+	18: {'model': 344, 'ammo': 10, 'name': 'Molotov Cocktail'},
+	22: {'model': 346, 'ammo': 250, 'name': '9mm'},
+	23: {'model': 347, 'ammo': 250, 'name': 'Silenced 9mm'},
+	24: {'model': 348, 'ammo': 250, 'name': 'Deagle'},
+	25: {'model': 349, 'ammo': 1000, 'name': 'Shotgun'},
+	26: {'model': 350, 'ammo': 1000, 'name': 'Sawnoff Shotgun'},
+	27: {'model': 351, 'ammo': 1000, 'name': 'SPAS12'},
+	28: {'model': 352, 'ammo': 5000, 'name': 'UZI'},
+	29: {'model': 353, 'ammo': 5000, 'name': 'MP5'},
+	30: {'model': 355, 'ammo': 5000, 'name': 'AK-47'},
+	31: {'model': 356, 'ammo': 5000, 'name': 'M4'},
+	32: {'model': 372, 'ammo': 5000, 'name': 'Tec9'},
+	33: {'model': 357, 'ammo': 5000, 'name': 'Country Rifle'},
+	34: {'model': 358, 'ammo': 5000, 'name': 'Sniper Rifle'},
+	35: {'model': 359, 'ammo': 5000, 'name': 'RPG'},
+	36: {'model': 360, 'ammo': 5000, 'name': 'HS Rocket'},
+	37: {'model': 361, 'ammo': 5000, 'name': 'Flamethrower'},
+	38: {'model': 362, 'ammo': 5000, 'name': 'Minigun'},
 	39: {'model': 363, 'ammo': 1, 'name': 'Satchel Charge'},
 	40: {'model': 364, 'ammo': 1, 'name': 'Detonator'},
-	41: {'model': 365, 'ammo': 1, 'name': 'Spraycan'},
-	42: {'model': 366, 'ammo': 1, 'name': 'Fire Extinguisher'},
-	43: {'model': 367, 'ammo': 1, 'name': 'Camera'},
+	41: {'model': 365, 'ammo': 9000, 'name': 'Spraycan'},
+	42: {'model': 366, 'ammo': 9000, 'name': 'Fire Extinguisher'},
+	43: {'model': 367, 'ammo': 9000, 'name': 'Camera'},
 	44: {'model': 368, 'ammo': 1, 'name': 'Night Vision Goggles'},
 	45: {'model': 369, 'ammo': 1, 'name': 'Thermal Goggles'},
 	46: {'model': 371, 'ammo': 1, 'name': 'parachute'},
@@ -100,6 +100,20 @@ COLOUR_UI_PRIMARY_TEXT = 0xFF00FFFF
 COLOUR_UI_CONFIRMATION_TEXT = 0x00FF00FF
 COLOUR_UI_BUTTON_BACKGROUND = 0x000000FF
 
+#gameplay HUD
+class HumanHUD():
+	def __init__(self, connection):
+		self.connection = connection
+		self.time_left_label = Frontend.CreateUIElement({'font': {'style': SAMP.FRONTEND_FONT_GTASA_CLEAN, 'text': 'Time Left: 0:00', 'proportional': True, 'alignment': Frontend.TEXT_ALIGNMENT_LEFT}, 
+													 'x': 30.0, 'y': 301.0, 'selectable': False, 'box': False, 'box_width': 280.0, 'box_height': 40.0, 'box_colour': COLOUR_UI_PRIMARY_TEXT})
+
+		self.hud_items = [self.time_left_label]
+	def Display(self):
+		Frontend.DisplayUIElements(self.connection, self.hud_items)
+
+
+
+#initial gameplay ui
 class WelcomeUI():
 	def __init__(self, connection):
 		self.connection = connection
@@ -197,7 +211,7 @@ class WeaponSelectUI():
 		for wep_id in self.weapon_buttons:
 			if self.weapon_buttons[wep_id].OwnsElement(element):
 				#conn.SendMessage(0xFFFFFFFF, "Clicked: {}".format(WEAPON_GTASA_DATA[wep_id]['name']))
-				self.click_callback(conn, self.index, WEAPON_GTASA_DATA[wep_id])
+				self.click_callback(conn, self.index, WEAPON_GTASA_DATA[wep_id], wep_id)
 				self.Hide()
 				return
 	def Display(self, callback):
@@ -255,6 +269,8 @@ class ClassSelectionUI():
 
 		self.weapon_select_ui_elements = []
 
+		self.selected_weapons = {}
+
 		the_weapon_select_menus = [WEAPON_CLASS_PRIMARY, WEAPON_CLASS_SECONDARY, WEAPON_CLASS_MELEE]
 		index = 0
 		for weapon_data in the_weapon_select_menus:
@@ -262,9 +278,11 @@ class ClassSelectionUI():
 			weapon_ui.index = index
 			index += 1
 			self.weapon_select_ui_elements.append(weapon_ui)
-	def OnPrimaryWeaponSelect(self, conn, index, weapon):
-		print("CB called.. {} {}".format(index, weapon))
+	def OnPrimaryWeaponSelect(self, conn, index, weapon, wep_id):
+		print("CB called.. {} {} {}".format(index, weapon, wep_id))
 		self.stage_2_menu[index].SetModel(weapon['model'])
+		self.selected_weapons[index] = weapon
+		self.selected_weapons[index]['wep_id'] = wep_id
 		self.Hide()
 		self.EnterWeaponSelMenu()
 	def OnClick(self, conn, element):
@@ -277,7 +295,12 @@ class ClassSelectionUI():
 				clicked_element = ui_elem
 		if element == self.spawn_button:
 			self.Hide()
-			self.connection.Entity.Spawn({})
+			print("Weapons: {}".format(self.selected_weapons))
+			weapons = []
+			for slot, weapon in self.selected_weapons.items():
+				weapons.append({'id': weapon['wep_id'], 'ammo': weapon['ammo']})
+
+			self.connection.Entity.Spawn({'position': THE_SPAWN_COORDS, 'model': 15, 'weapons': weapons})
 			return
 		if clicked_element != None:
 			conn.SendMessage(COLOUR_UI_PRIMARY_TEXT,"showing ui element")
@@ -328,9 +351,11 @@ class PlayerEntity(GenericEntity):
 		super(PlayerEntity, self).__init__()
 
 		self.connection = connection
+		self.main_hud = HumanHUD(self.connection)
 		print("Make SAMPEntity: {}".format(connection))
 	def OnEnterWorld(self):
 		print("Enter world!")
+		self.main_hud.Display()
 		self.connection.SendMessage(0xFFFFFFFF, ("Welcome to the Python server, your IP is: {}:{}".format(self.connection.GetIP(), self.connection.GetPort())))
 class SAMPHandler(CoreServer.Connection, CoreServer.CommandHandler):
 	def __init__(self):

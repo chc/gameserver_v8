@@ -225,8 +225,13 @@ PyObject *pyi_baseentity_spawn(gs_BaseEntityObject *self, PyObject *args)
 			float x = 0.0,y = 0.0,z = 0.0;
 			int skin = 0;
 			int team = -1;
+
+			int weapons[3], ammo[3];
+			memset(&weapons,0,sizeof(weapons));
+			memset(&ammo,0,sizeof(ammo));
 			PyObject *pos = PyDict_GetItemString(dict, "position");
 			PyObject *model = PyDict_GetItemString(dict, "model");
+			PyObject *py_weapons = PyDict_GetItemString(dict, "weapons");
 			if(pos) {
 				PyObject *pyx = PyList_GET_ITEM(pos, 0);
 				PyObject *pyy = PyList_GET_ITEM(pos, 1);
@@ -238,7 +243,28 @@ PyObject *pyi_baseentity_spawn(gs_BaseEntityObject *self, PyObject *args)
 			if(model) {
 				skin = PyLong_AsLong(model);
 			}
-			tbl->user->SpawnPlayer(x, y, z, skin);	
+			if(py_weapons) {
+				int idx = 0;
+				PyObject *wep_data = PyList_GET_ITEM(py_weapons, idx);
+				if(wep_data) {
+					weapons[idx] = PyLong_AsLong(PyDict_GetItemString(wep_data, "id"));
+					ammo[idx] = PyLong_AsLong(PyDict_GetItemString(wep_data, "ammo"));
+					idx++;
+				}
+				wep_data = PyList_GET_ITEM(py_weapons, idx);
+				if(wep_data) {
+					weapons[idx] = PyLong_AsLong(PyDict_GetItemString(wep_data, "id"));
+					ammo[idx] = PyLong_AsLong(PyDict_GetItemString(wep_data, "ammo"));
+					idx++;
+				}
+				wep_data = PyList_GET_ITEM(py_weapons, idx);
+				if(wep_data) {
+					weapons[idx] = PyLong_AsLong(PyDict_GetItemString(wep_data, "id"));
+					ammo[idx] = PyLong_AsLong(PyDict_GetItemString(wep_data, "ammo"));
+					idx++;
+				}
+			}
+			tbl->user->SpawnPlayer(x, y, z, skin, -1, (uint32_t*)&weapons, (uint32_t*)&ammo);
 		}
 	}
 	Py_RETURN_NONE;

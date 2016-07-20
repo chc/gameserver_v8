@@ -679,7 +679,7 @@ void SAMPRakPeer::SendClientMessage(uint32_t colour, const char *msg) {
 	send_rpc(ESAMPRPC_SendClientMessage, &bsData);
 	
 }
-void SAMPRakPeer::SpawnPlayer(float x, float y, float z, int skin, int team) {
+void SAMPRakPeer::SpawnPlayer(float x, float y, float z, int skin, int team, uint32_t *weapons, uint32_t *ammo) {
 	RakNet::BitStream bsData;
 
 
@@ -692,15 +692,30 @@ void SAMPRakPeer::SpawnPlayer(float x, float y, float z, int skin, int team) {
 	bsData.Write(z);
 	bsData.Write(0.0f);
 
-	//weapons
-	bsData.Write((uint32_t)0);
-	bsData.Write((uint32_t)0);
-	bsData.Write((uint32_t)0);
 
-	//ammo
-	bsData.Write((uint32_t)0);
-	bsData.Write((uint32_t)0);
-	bsData.Write((uint32_t)0);
+	if(weapons && ammo) {
+		//weapons
+		bsData.Write((uint32_t)weapons[0]);
+		bsData.Write((uint32_t)weapons[1]);
+		bsData.Write((uint32_t)weapons[2]);
+
+		//ammo
+		bsData.Write((uint32_t)ammo[0]);
+		bsData.Write((uint32_t)ammo[1]);
+		bsData.Write((uint32_t)ammo[2]);
+	}
+
+	else {
+		//weapons
+		bsData.Write((uint32_t)0);
+		bsData.Write((uint32_t)0);
+		bsData.Write((uint32_t)0);
+
+		//ammo
+		bsData.Write((uint32_t)0);
+		bsData.Write((uint32_t)0);
+		bsData.Write((uint32_t)0);
+	}
 	send_rpc(ESAMPRPC_RequestClass, &bsData);
 
 	bsData.Reset();

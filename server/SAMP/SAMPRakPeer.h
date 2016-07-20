@@ -116,7 +116,7 @@ public:
 	const struct sockaddr_in *getAddress() { return &m_address_info; }
 	void SendClientMessage(uint32_t colour, const char *msg);
 	void ShowPlayerDialog(int dialogid, int type, const char *title, const char *msg, const char *b1 = NULL, const char *b2 = NULL);
-	void SpawnPlayer(float x, float y, float z, int skin = 0, int team = -1);
+	void SpawnPlayer(float x, float y, float z, int skin = 0, int team = -1, uint32_t *weapons = NULL, uint32_t *ammo = NULL);
 	void send_rpc(uint8_t rpc, RakNet::BitStream *stream);
 	void send_bitstream(RakNet::BitStream *stream);
 
