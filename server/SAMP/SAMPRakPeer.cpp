@@ -111,7 +111,8 @@ void SAMPRakPeer::handle_raknet_packet(char *data, int len) {
 
 
 		}
-		acknowlegements.Insert(seqid);
+		if(reliability == RELIABLE || reliability == RELIABLE_SEQUENCED || reliability == RELIABLE_ORDERED)
+			acknowlegements.Insert(seqid);
 
 		bool is_split_packet;
 		//is.ReadBits((unsigned char *)&is_split_packet, 1);
