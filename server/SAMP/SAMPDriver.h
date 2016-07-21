@@ -269,6 +269,7 @@ public:
 	SAMPTextDraw *FindTextDrawByID(uint16_t id);
 	SAMPTextDraw *CreateTextDraw();
 	uint16_t GetFreeTextDrawID();
+
 private:
 
 	//samp query stuff
@@ -285,7 +286,6 @@ private:
 	int m_last_pickup_id;
 	int m_last_3dlabel_id;
 	
-	const char *m_host;
 	uint16_t m_port;
 	int m_sd;
 	std::vector<SAMPRakPeer *> m_connections;

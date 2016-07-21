@@ -399,3 +399,15 @@ CoreServer.SetConnectionHandler(SAMPHandler)
 SAMP.SetPickupEntity(PickupEntity)
 SAMP.Set3DTextLabelEntity(SAMP3DTextEntity)
 SAMP.SetVehicleEntity(VehicleEntity)
+SAMP.SetServerProperties({
+		'name': 'Zombies Server', 
+		'max_players': 1000, 
+		'password': '123321',
+		'mapname': 'Los Santos',
+		'gamemode': 'Toads',
+		'rules': {
+			'version': 'python-server',
+			'weburl': 'http://google.com',
+
+		}
+	})

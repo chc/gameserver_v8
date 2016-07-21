@@ -2,6 +2,7 @@
 #include "../SAMP/SAMPRakPeer.h"
 #include "../SAMP/SAMPDriver.h"
 #include <server/CHCGameServer.h>
+#include <stdlib.h>
 #include <structmember.h>
 
 typedef struct {
@@ -25,6 +26,7 @@ PyObject *pyi_samp_createvehicle(PyObject *self, PyObject *args);
 PyObject *pyi_samp_setpickupentity(PyObject *self, PyObject *args);
 PyObject *pyi_samp_set3dtextextentity(PyObject *self, PyObject *args);
 PyObject *pyi_samp_setvehicleentity(PyObject *self, PyObject *args);
+PyObject *pyi_samp_setserverproperties(PyObject *self, PyObject *args);
 
 PyObject *pyi_samp_setnumclasses(PyObject *self, PyObject *args);
 PyObject *pyi_samp_showgametext(PyObject *self, PyObject *args);
@@ -45,6 +47,8 @@ PyMethodDef SAMP_methods[] = {
  								    "Sets the 3d Text Label Entity"},
  								    {"SetVehicleEntity",  (PyCFunction)pyi_samp_setvehicleentity, METH_O,
  								    "Sets the vehicle entity"},
+ 								    {"SetServerProperties",  (PyCFunction)pyi_samp_setserverproperties, METH_VARARGS,
+ 								    "Sets the server properties"},
 
  								    {"SetNumSpawnClasses", (PyCFunction)pyi_samp_setnumclasses, METH_VARARGS, "Sets the number of classes"},
  								    {"ShowGameText", (PyCFunction)pyi_samp_showgametext, METH_VARARGS, "Sends Game Text to the client"},
@@ -264,6 +268,38 @@ PyObject *pyi_samp_set3dtextextentity(PyObject *self, PyObject *args) {
 PyObject *pyi_samp_setvehicleentity(PyObject *self, PyObject *args) {
 	SAMPScriptState.mp_base_vehicle = (PyTypeObject *)args;
     Py_INCREF(SAMPScriptState.mp_base_vehicle);
+	Py_RETURN_NONE;
+}
+PyObject *pyi_samp_setserverproperties(PyObject *self, PyObject *args) {
+	PyObject *dict;
+	CHCGameServer *server = gbl_pi_interface->getGameServer();
+	if(PyArg_ParseTuple(args, "O", &dict)) {
+		if(PyDict_Check(dict)) {
+			PyObject *py_obj = PyDict_GetItemString(dict, "name");
+			const char *str;
+			if(py_obj) {
+				str = PythonScriptInterface::copyPythonString(py_obj);
+				server->setName(str);
+				free((void *)str);
+			}
+			py_obj = PyDict_GetItemString(dict, "mapname");
+			if(py_obj) {
+				str = PythonScriptInterface::copyPythonString(py_obj);
+				server->setMap(str);
+				free((void *)str);
+			}
+			py_obj = PyDict_GetItemString(dict, "gamemode");
+			if(py_obj) {
+				str = PythonScriptInterface::copyPythonString(py_obj);
+				server->setVersion(str);
+				free((void *)str);
+			}
+			py_obj = PyDict_GetItemString(dict, "max_players");
+			if(py_obj) {
+				server->setMaxPlayers(PyLong_AsLong(py_obj));
+			}
+		}
+	}
 	Py_RETURN_NONE;
 }
 PyObject *pyi_samp_setnumclasses(PyObject *self, PyObject *args) {
