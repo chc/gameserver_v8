@@ -925,8 +925,13 @@ void SAMPRakPeer::PlayerStreamCheck(SAMPPlayer *car) {
 	}
 }
 bool SAMPRakPeer::PlayerInStreamRange(SAMPPlayer *car) {
-	float *pos = car->GetPosition();
-	return VecInRadius(m_vehicle_stream_distance, pos[0], pos[1], pos[2]);
+	float dist[3];
+	float *pos = GetPlayer()->GetPosition();
+	float *other_pos = car->GetPosition();
+	dist[0] = other_pos[0] - pos[0];
+	dist[1] = other_pos[1] - pos[1];
+	dist[2] = other_pos[2] - pos[2];
+	return VecInRadius(m_vehicle_stream_distance, dist[0], dist[1], dist[2]);
 }
 void SAMPRakPeer::PutInCar(SAMPVehicle *car, uint8_t seat) {
 	RakNet::BitStream bs;

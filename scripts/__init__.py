@@ -404,7 +404,7 @@ SAMP.SetServerProperties({
 		'max_players': 1000, 
 		'password': '123321',
 		'mapname': 'Los Santos',
-		'gamemode': 'Toads',
+		'gamemode': 'Zombie',
 		'rules': {
 			'version': 'python-server',
 			'weburl': 'http://google.com',
