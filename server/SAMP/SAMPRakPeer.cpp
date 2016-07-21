@@ -488,9 +488,6 @@ void SAMPRakPeer::m_client_command_handler(RakNet::BitStream *stream) {
 	printf("Cmd: %s\n",cmd);
 	CHCGameServer *server = (CHCGameServer *)mp_driver->getServer();
 	server->GetScriptInterface()->HandleEvent(CHCGS_ClientCommand, this, cmd);
-
-	SAMPTextDraw *td = mp_driver->CreateTextDraw();
-	ShowTextDraw(td);
 }
 void SAMPRakPeer::m_client_dialogresp_handler(RakNet::BitStream *stream) {
 	uint16_t dialogid;
