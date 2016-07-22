@@ -98,7 +98,7 @@ WEAPON_CLASS_MELEE = {'class_id': 2, 'weapons': [1,2,3,4,5,6,7,8,9,10,11,12,13,1
 COLOUR_UI_BACKGROUND = 0x660000FF
 COLOUR_UI_PRIMARY_TEXT = 0xFF00FFFF
 COLOUR_UI_CONFIRMATION_TEXT = 0x00FF00FF
-COLOUR_UI_BUTTON_BACKGROUND = 0x000000FF
+COLOUR_UI_BUTTON_BACKGROUND = 0xFF000000
 
 #gameplay HUD
 class HumanHUD():
@@ -165,8 +165,21 @@ class LabeledUIPreviewElement():
 
 		self.MODEL_PREVIEW_FONT_OPTIONS = {'colour': COLOUR_UI_PRIMARY_TEXT, 'style': SAMP.FRONTEND_FONT_GTASA_DFF_MODEL, 'proportional': True, 'model': options['model'], 'model_colours': options['colours'], 'model_camera_zoom': options['zoom'], 'rotation': options['rotation'], 'alignment': Frontend.TEXT_ALIGNMENT_CENTER}
 		self.model_preview = Frontend.CreateUIElement({'font': self.MODEL_PREVIEW_FONT_OPTIONS, 'x': options['x'], 'y': options['y'], 'selectable': True, 'box': True, 'box_width': 75.0, 'box_height': 75.0, 'box_colour': COLOUR_UI_BACKGROUND})
+
+		self.footer_text = None
+		if 'footer' in options:
+			self.footer_text = options['footer']
+		print("Set footer to: {}".format(self.footer_text))
+
+
+		self.HEADER_FONT_OPTIONS = {'text': 'Welcome to West Coast Zombie Apocalypse!', 'style': SAMP.FRONTEND_FONT_GTASA_CORONA, 'colour': COLOUR_UI_PRIMARY_TEXT, 'proportional': True}
+		self.header = Frontend.CreateUIElement({'font': self.HEADER_FONT_OPTIONS, 'x': 200.0, 'y': 100.0})
+
+
+		self.FOOTER_FONT_OPTIONS = {'text': self.footer_text, 'style': SAMP.FRONTEND_FONT_GTASA_CLEAN, 'colour': COLOUR_UI_BUTTON_BACKGROUND, 'proportional': True, 'height': 1.12, 'width': 0.480000/2}
+		self.footer_element = Frontend.CreateUIElement({'font': self.FOOTER_FONT_OPTIONS, 'x': options['x'], 'y': options['y']+ 65.0, 'box_colour': COLOUR_UI_BACKGROUND})
 	def Display(self):
-		Frontend.DisplayUIElements(self.connection, [self.model_preview])
+		Frontend.DisplayUIElements(self.connection, [self.footer_element, self.model_preview])
 	def SetModel(self, model):
 		print("Model: {}".format(model))
 		Frontend.SetUIElementModel({'model': model, 'element': self.model_preview})
@@ -177,7 +190,7 @@ class LabeledUIPreviewElement():
 	def OwnsElement(self, element):
 		return element == self.model_preview
 	def Hide(self):
-		Frontend.HideUIElements(self.connection, [self.model_preview])
+		Frontend.HideUIElements(self.connection, [self.footer_element, self.model_preview])
 class WeaponSelectUI():
 	MAX_ITEM_ROWS = 5
 	MAX_ITEM_COLUMNS = 5
@@ -205,6 +218,8 @@ class WeaponSelectUI():
 
 		options['identifier'] = wep_id
 		options['connection'] = connection
+
+		options['footer'] = WEAPON_GTASA_DATA[wep_id]['name']
 		element = LabeledUIPreviewElement(options)
 		return element
 	def OnClick(self, conn, element):
@@ -246,13 +261,13 @@ class ClassSelectionUI():
 
 
 		#menu stage 2 - weapon selection
-		self.primary_weapon_uielm = LabeledUIPreviewElement({'connection': connection, 'x': 100.0, 'y': 150.0, 'model': 348, 'title': 'Gun', 'footer': 'heii', 'zoom': 1.5, 'callback': self.OnPrimaryWeaponSelect })
+		self.primary_weapon_uielm = LabeledUIPreviewElement({'connection': connection, 'x': 100.0, 'y': 150.0, 'model': 348, 'title': 'Gun', 'footer': 'Empty', 'zoom': 1.5, 'callback': self.OnPrimaryWeaponSelect })
 		self.primary_weapon_uielm.index = 0
 		
-		self.secondary_weapon_uielm = LabeledUIPreviewElement({'connection': connection, 'x': 250.0, 'y': 150.0, 'model': 353, 'title': 'Gun', 'footer': 'heii', 'zoom': 1.5, 'callback': self.OnPrimaryWeaponSelect })
+		self.secondary_weapon_uielm = LabeledUIPreviewElement({'connection': connection, 'x': 250.0, 'y': 150.0, 'model': 353, 'title': 'Gun', 'footer': 'Empty', 'zoom': 1.5, 'callback': self.OnPrimaryWeaponSelect })
 		self.secondary_weapon_uielm.index = 1
 
-		self.melee_weapon_uielm = LabeledUIPreviewElement({'connection': connection, 'x': 450.0, 'y': 150.0, 'model': 334, 'title': 'Gun', 'footer': 'heii', 'zoom': 1.5, 'callback': self.OnPrimaryWeaponSelect })
+		self.melee_weapon_uielm = LabeledUIPreviewElement({'connection': connection, 'x': 450.0, 'y': 150.0, 'model': 334, 'title': 'Gun', 'footer': 'Empty', 'zoom': 1.5, 'callback': self.OnPrimaryWeaponSelect })
 		self.melee_weapon_uielm.index = 2
 
 		self.SPAWN_BUTTON_FONT_OPTIONS = {'style': SAMP.FRONTEND_FONT_GTASA_CLEAN, 'text': 'Spawn', 'proportional': True, 'alignment': Frontend.TEXT_ALIGNMENT_LEFT} 
@@ -378,6 +393,7 @@ class SAMPHandler(CoreServer.Connection, CoreServer.CommandHandler):
 			self.welcome_ui.Display()
 	def OnChatMessage(self, message):
 		print("Got msg!")
+		CoreServer.ForEach
 
 def pickup_event(pickup_entity, player_entity):
 	print("asdasd")
