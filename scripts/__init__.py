@@ -181,8 +181,9 @@ class LabeledUIPreviewElement():
 	def Display(self):
 		Frontend.DisplayUIElements(self.connection, [self.footer_element, self.model_preview])
 	def SetModel(self, model):
-		print("Model: {}".format(model))
 		Frontend.SetUIElementModel({'model': model, 'element': self.model_preview})
+	def SetFooter(self, text):
+		Frontend.SetUIElementText({'text': text, 'element': self.footer_element})
 	def HandleClick(self, conn, element):
 		if element == self.model_preview:
 			return True
@@ -296,6 +297,7 @@ class ClassSelectionUI():
 	def OnPrimaryWeaponSelect(self, conn, index, weapon, wep_id):
 		print("CB called.. {} {} {}".format(index, weapon, wep_id))
 		self.stage_2_menu[index].SetModel(weapon['model'])
+		self.stage_2_menu[index].SetFooter(weapon['name'])
 		self.selected_weapons[index] = weapon
 		self.selected_weapons[index]['wep_id'] = wep_id
 		self.Hide()
@@ -393,7 +395,6 @@ class SAMPHandler(CoreServer.Connection, CoreServer.CommandHandler):
 			self.welcome_ui.Display()
 	def OnChatMessage(self, message):
 		print("Got msg!")
-		CoreServer.ForEach
 
 def pickup_event(pickup_entity, player_entity):
 	print("asdasd")

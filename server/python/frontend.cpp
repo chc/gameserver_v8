@@ -283,6 +283,29 @@ PyObject *frontend_activatemouse(PyObject *self, PyObject *args) {
 		Py_INCREF(callback);
 	Py_RETURN_NONE;
 }
+
+PyObject *frontend_setuielementtext(PyObject *self, PyObject *args) {
+	PyObject *dict;
+   	SAMPDriver *driver = gbl_pi_interface->getGameServer()->getSAMPDriver();
+    if (!PyArg_ParseTuple(args, "O", &dict))
+        Py_RETURN_NONE;
+    if(PyDict_Check(dict)) {
+    	PyObject *py_text = PyDict_GetItemString(dict, "text");
+    	PyObject *py_element = PyDict_GetItemString(dict, "element");
+
+    	if(py_text && py_element) {
+    		int id = PyLong_AsLong(py_element);
+    		SAMPTextDraw *td = driver->FindTextDrawByID(id);
+			const char *str = PythonScriptInterface::copyPythonString(py_text);
+			if(str) {
+				strcpy(td->text, str);
+				free((void *)str);
+			}
+
+    	}
+    }
+	Py_RETURN_NONE;
+}
 static PyMethodDef FrontendMethods[] = {
 	//CreateUIElement
     {"CreateModal", frontend_createmodal, METH_VARARGS, "Display a modal to the client"},
@@ -291,6 +314,7 @@ static PyMethodDef FrontendMethods[] = {
     {"HideUIElements", frontend_hideuielements, METH_VARARGS, "Displays UI arguments"},
     {"ActivateMouse", frontend_activatemouse, METH_VARARGS, "Sets the mouses activity state"},
     {"SetUIElementModel", frontend_setuielementmodel, METH_VARARGS, "Sets a UI element model"},
+    {"SetUIElementText", frontend_setuielementtext, METH_VARARGS, "Sets a UI elements text data"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
