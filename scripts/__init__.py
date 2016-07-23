@@ -395,6 +395,7 @@ class SAMPHandler(CoreServer.Connection, CoreServer.CommandHandler):
 			self.welcome_ui.Display()
 	def OnChatMessage(self, message):
 		print("Got msg!")
+		CoreServer.forEach(PlayerEntity, lambda p: p.Connection.SendMessage(0xFF00FFFF, "Msg"))
 
 def pickup_event(pickup_entity, player_entity):
 	print("asdasd")
@@ -427,4 +428,6 @@ SAMP.SetServerProperties({
 			'weburl': 'http://google.com',
 
 		}
-	})
+})
+
+CoreServer.forEach(PlayerEntity, lambda p: p.Connection.SendMessage(0xFF00FFFF, "Msg"))

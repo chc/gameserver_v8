@@ -44,7 +44,10 @@ uint32_t CHCGameServer::getMaxPlayers() {
 IScriptInterface *CHCGameServer::GetScriptInterface() {
 	return mp_script_interface;
 }
-
+int CHCGameServer::getNumConnections(bool include_bots, bool include_not_in_scoreboard) {
+	SAMPDriver *driver = this->getSAMPDriver();
+	return driver->GetNumConnections(include_bots, include_not_in_scoreboard);
+}
 SAMPDriver *CHCGameServer::getSAMPDriver() {
 	std::vector<INetDriver *>::iterator it = m_net_drivers.begin();
 	while(it != m_net_drivers.end()) {

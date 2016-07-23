@@ -55,6 +55,7 @@ PyTypeObject gs_CommandHandlerType = {
 
 PyObject *gs_conn_sendmsg(PyObject *self, PyObject *args);
 PyObject *gs_conn_setconnhandler(PyObject *self, PyObject *args);
+PyObject *gs_core_foreach(PyObject *self, PyObject *args);
 PyObject *pyi_conn_getip(PyObject *self, PyObject *args);
 PyObject *pyi_conn_getport(PyObject *self, PyObject *args);
 PyObject *gs_conn_setentity(PyObject *self, PyObject *args);
@@ -65,6 +66,7 @@ PyObject *pyi_cmdhndlr_registercmds(PyObject *self, PyObject *args);
 static PyMethodDef GameserverMethods[] = {
      {"SetConnectionHandler", gs_conn_setconnhandler, METH_O, "Sets the connection handler"},
      {"AddEntity", gs_conn_addentity, METH_VARARGS, "Sets the connection handler"},
+     {"forEach", gs_core_foreach, METH_VARARGS, "Foreach on various objects"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
@@ -92,6 +94,16 @@ PyMethodDef cmdhandler_methods[] = {
                                     {"RegisterCommands",  pyi_cmdhndlr_registercmds, METH_VARARGS,
                                     "Registers commands to be processed by the handler"},
                                     {NULL, NULL, 0, NULL}};
+
+
+PyObject *gs_core_foreach(PyObject *self, PyObject *args) {
+    PyTypeObject *type;
+    PyObject *lambda;
+    if(PyArg_ParseTuple(args, "OO", &type, &lambda)) {
+        printf("Type: (%s)%p Lambda: %p\n", type->tp_name, type, lambda);
+    }
+    Py_RETURN_NONE;
+}
 
 PyObject *gs_conn_sendmsg(PyObject *self, PyObject *args)
 {

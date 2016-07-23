@@ -6,6 +6,8 @@
 
 #include "SAMPPlayer.h"
 
+#include <sys/time.h>
+
 RPCHandler SAMPRakPeer::s_rpc_handler[] = {
 	{ESAMPRPC_ClientJoin, &SAMPRakPeer::m_client_join_handler},
 	{ESAMPRPC_ClientCommand, &SAMPRakPeer::m_client_command_handler},
@@ -33,13 +35,20 @@ SAMPRakPeer::SAMPRakPeer(SAMPDriver *driver, struct sockaddr_in *address_info) {
     mp_player->SetPlayerID(mp_driver->GetFreePlayerID());
 
     m_num_spawn_classes = 0;
+
+    m_delete_flag = false;
+    m_timeout_flag = false;
 }
 SAMPRakPeer::~SAMPRakPeer() {
-	delete mp_player;
+	printf("Rak peer delete\n");
+	if(mp_player) {
+		mp_driver->SendRemovePlayerFromScoreboard(this->GetPlayer());
+		delete mp_player;
+	}
     StringCompressor::RemoveReference();
 }
 void SAMPRakPeer::handle_packet(char *data, int len) {
-
+	gettimeofday(&m_last_ping, NULL);
 	sampDecrypt((uint8_t *)data, len, mp_driver->getPort(), 0);
 
 	int sd = mp_driver->getListenerSocket();
@@ -650,6 +659,15 @@ void SAMPRakPeer::SelectTextDraw(uint32_t hover_colour, bool cancel) {
 void SAMPRakPeer::think() {
 	//if(m_got_client_join)
 		//send_ping();
+
+	//check for timeout
+	struct timeval current_time;
+	gettimeofday(&current_time, NULL);
+	if(current_time.tv_sec - m_last_ping.tv_sec > SAMP_PING_TIME_SEC) {
+		m_delete_flag = true;
+		m_timeout_flag = true;
+	}
+
 	if(mp_player && mp_player->GetSpawned())
 		mp_driver->StreamUpdate(this);
 }
@@ -995,4 +1013,15 @@ void SAMPRakPeer::AddToScoreboard(SAMPPlayer *peer) {
 	bs.Write((uint8_t)len);
 	bs.Write(name, len);
 	send_rpc(ESAMPRPC_ServerJoin, &bs);
+}
+void SAMPRakPeer::RemoveFromScoreboard(SAMPPlayer *peer) {
+	RakNet::BitStream bs;
+	const char *name = peer->GetName();
+	int len = strlen(name);
+	bs.Write(peer->GetPlayerID());
+	bs.Write((uint8_t)peer->GetSAMPPeer()->IsTimeout());
+	send_rpc(ESAMPRPC_ServerQuit, &bs);
+}
+int SAMPRakPeer::GetPing() {
+	return 0;
 }

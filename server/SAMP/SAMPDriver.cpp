@@ -19,7 +19,11 @@ SAMPDriver::SAMPDriver(INetServer *server, const char *host, uint16_t port) : IN
 	if((m_sd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0){
 		//signal error
     }
-    
+
+    struct timeval tv;
+	tv.tv_sec = 0;
+	tv.tv_usec = 100000;
+
 	m_port = port;
 
     m_local_addr.sin_port = htons(port);
@@ -27,9 +31,9 @@ SAMPDriver::SAMPDriver(INetServer *server, const char *host, uint16_t port) : IN
     m_local_addr.sin_family = AF_INET;
 	int n = bind(m_sd, (struct sockaddr *)&m_local_addr, sizeof m_local_addr);
     if(n < 0) {
-
         //signal error
     }
+
     gettimeofday(&m_server_start, NULL);
 
     m_last_pickup_id = 0;
@@ -49,7 +53,14 @@ void SAMPDriver::think() {
 	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
 	while(it != m_connections.end()) {
 		SAMPRakPeer *peer = *it;
-		peer->think();
+		if(!peer->ShouldDelete())
+			peer->think();
+		else {
+			//delete if marked for deletiontel
+			delete peer;
+			it = m_connections.erase(it);
+			continue;
+		}
 		it++;
 	}
 }
@@ -114,7 +125,6 @@ void SAMPDriver::tick() {
 
 	int len = recvfrom(m_sd,(char *)&recvbuf,sizeof(recvbuf),0,(struct sockaddr *)&si_other,&slen);
 
-
 	SAMPHeader *header = (SAMPHeader *)&recvbuf;
 	
 
@@ -158,37 +168,31 @@ void SAMPDriver::handleClientsPacket(int sd, struct sockaddr_in *si_other, SAMPH
 	BufferWriteData(&p, &len, (uint8_t *)header, sizeof(SAMPHeader)-1);
 
 
-	int num_players = 0;
+	CHCGameServer *server = ((CHCGameServer *)m_server);
+	int num_players = server->getNumConnections();
 
 	BufferWriteShort(&p, &len, num_players);
 
-	
-	/*
-	std::vector<_PlayerInfo>::iterator it = players.begin();
-	int i = 0;
 
-	
-	while(it != players.end()) {
 
-		player = *it;
-
+	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
+	while(it != m_connections.end()) {
+		SAMPRakPeer *user = *it;
+		SAMPPlayer *player = user->GetPlayer();
 		if(detailed)
-		BufferWriteByte(&p, &len, i++); //write player id
+			BufferWriteByte(&p, &len, player->GetPlayerID()); //write player id
 
-		BufferWriteByte(&p, &len, strlen(player.name));
+		BufferWriteByte(&p, &len, strlen(player->GetName()));
 
-		BufferWriteData(&p, &len, (uint8_t *)&player.name, strlen(player.name));
+		BufferWriteData(&p, &len, (uint8_t*)player->GetName(), strlen(player->GetName()));
 
-		BufferWriteInt(&p, &len, player.score);
+		BufferWriteInt(&p, &len, 0);
 
 		if(detailed) {
-			int ping = player.ping + rand() % 100;
-			BufferWriteInt(&p, &len, ping);
+			BufferWriteInt(&p,&len,user->GetPing());
 		}
 		it++;
-
 	}
-	*/
 
 
 	socklen_t slen = sizeof(struct sockaddr_in);
@@ -208,7 +212,7 @@ void SAMPDriver::handleInfoPacket(int sd, struct sockaddr_in *si_other, SAMPHead
 
 	CHCGameServer *server = ((CHCGameServer *)m_server);
 
-	int num_players = 0;
+	int num_players = server->getNumConnections();
 	int max_players = server->getMaxPlayers();
 
 	BufferWriteShort(&p,&len, num_players); //num players
@@ -470,6 +474,15 @@ void SAMPDriver::SendAddPlayerToScoreboard(SAMPPlayer *player) {
 			peer->AddToScoreboard(player);
 		it++;
 	}	
+}
+void SAMPDriver::SendRemovePlayerFromScoreboard(SAMPPlayer *player) {
+	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
+	while(it != m_connections.end()) {
+		SAMPRakPeer *peer = *it;
+		if(peer->GetPlayer() != player)
+			peer->RemoveFromScoreboard(player);
+		it++;
+	}		
 }
 SAMPPlayer *SAMPDriver::findPlayerByID(uint16_t id) {
 	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
@@ -760,4 +773,22 @@ void SAMPDriver::SendBulletData(SAMPPlayer *player, SAMPBulletData *bullet) {
 	bs.Write(bullet->center[2]);
 	bs.Write(bullet->weapon);
 	SendBitstreamToStreamed(player, &bs);
+}
+int SAMPDriver::GetNumConnections(bool include_bots, bool include_not_in_scoreboard) {
+	int ret = 0;
+	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
+	while(it != m_connections.end()) {
+		SAMPRakPeer *user = *it;
+		ret++;
+		it++;
+	}
+	if(include_bots) {
+		std::vector<SAMPPlayer *>::iterator itb = m_bots.begin();
+		while(itb != m_bots.end()) {
+			SAMPPlayer *user = *itb;
+			ret++;
+			itb++;
+		}
+	}
+	return ret;	
 }

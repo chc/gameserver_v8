@@ -39,6 +39,8 @@ public:
 	void setMaxPlayers(uint32_t max);
 	uint32_t getMaxPlayers();
 
+	int getNumConnections(bool include_bots = false, bool include_not_in_scoreboard = false);
+
 	IScriptInterface *GetScriptInterface();
 	SAMPDriver 		 *getSAMPDriver();
 private:

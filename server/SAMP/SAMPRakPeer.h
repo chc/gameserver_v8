@@ -138,6 +138,7 @@ public:
 	bool PlayerInStreamRange(SAMPPlayer *car);
 
 	void AddToScoreboard(SAMPPlayer *bot);
+	void RemoveFromScoreboard(SAMPPlayer *bot);
 	SAMPPlayer *GetPlayer() { return mp_player; };
 
 	void PutInCar(SAMPVehicle *car, uint8_t seat = 0);
@@ -153,6 +154,11 @@ public:
 	void HideTextDraw(SAMPTextDraw *td);
 
 	void SelectTextDraw(uint32_t hover_colour, bool cancel = false);
+
+	bool ShouldDelete() { return m_delete_flag; };
+	bool IsTimeout() { return m_timeout_flag; }
+
+	int GetPing();
 private:
 	void handle_raknet_packet(char *data, int len);
 	void process_bitstream(RakNet::BitStream *stream);
@@ -169,6 +175,8 @@ private:
 	uint16_t m_cookie_challenge;
 	SAMPDriver *mp_driver;
 	ESAMPConnectionState m_state;
+
+	struct timeval m_last_ping;
 
 	DataStructures::RangeList<uint16_t> acknowlegements;
 
@@ -208,6 +216,9 @@ private:
 	SAMPPlayer *mp_player;
 
 	int m_num_spawn_classes;
+
+	bool m_delete_flag;
+	bool m_timeout_flag;
 	
 };
 #endif //_SAMPRAKPEER_H

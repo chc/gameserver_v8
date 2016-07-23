@@ -121,6 +121,7 @@ void PythonScriptInterface::HandleEvent(int event_id, void *user, void *extra) {
 			break;
 		}
 		case CHCGS_ClientDisconnectEvent: {
+			Py_XDECREF(tbl->connection_object);
 			printf("Client disconnect\n");
 			break;
 		}

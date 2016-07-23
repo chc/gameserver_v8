@@ -26,6 +26,8 @@ class SAMPPlayer;
 #define SAMP_MAX_PLAYER_TEXTDRAW 256
 #define SAMP_TEXTDRAW_MAX_STRLEN 1024
 
+#define SAMP_PING_TIME_SEC 5
+
 enum ESAMPRPC {
 	ESAMPRPC_SetPlayerPos = 12,	
 	ESAMPRPC_SetPlayerHealth = 14,	
@@ -53,6 +55,7 @@ enum ESAMPRPC {
 	ESAMPRPC_ShowTextDraw = 134,
 	ESAMPRPC_HideTextDraw = 135,
 	ESAMPRPC_ServerJoin = 137,
+	ESAMPRPC_ServerQuit = 138,
 	ESAMPRPC_SetPlayerSkin = 153,
 	ESAMPRPC_ExitVehicle = 154,
 	ESAMPRPC_VehicleCreate = 164,
@@ -254,6 +257,7 @@ public:
 	void SendPlayerUpdate(SAMPPlayer *player);
 
 	void SendAddPlayerToScoreboard(SAMPPlayer *player);
+	void SendRemovePlayerFromScoreboard(SAMPPlayer *player);
 
 	SAMPPlayer *findPlayerByID(uint16_t id);
 	uint16_t GetFreePlayerID();
@@ -269,6 +273,8 @@ public:
 	SAMPTextDraw *FindTextDrawByID(uint16_t id);
 	SAMPTextDraw *CreateTextDraw();
 	uint16_t GetFreeTextDrawID();
+
+	int GetNumConnections(bool include_bots = false, bool include_not_in_scoreboard = false);
 
 private:
 
