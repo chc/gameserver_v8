@@ -174,7 +174,7 @@ void PythonScriptInterface::HandleEvent(int event_id, void *user, void *extra) {
 			break;
 		}
 		case CHCGS_PlayerDeath: {
-			SAMPDeathInfo *death_info;
+			SAMPDeathInfo *death_info = (SAMPDeathInfo *)extra;
 			SAMPDriver *driver = this->getGameServer()->getSAMPDriver();
 			printf("Send death: %d  %d\n", ((SAMPPlayer *)user)->GetPlayerID(), death_info->killer_id);
 			driver->BroadcastDeath((SAMPPlayer *)user, (SAMPPlayer *)driver->findPlayerByID(death_info->killer_id), 0);
