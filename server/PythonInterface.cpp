@@ -177,7 +177,7 @@ void PythonScriptInterface::HandleEvent(int event_id, void *user, void *extra) {
 			SAMPDeathInfo *death_info;
 			SAMPDriver *driver = this->getGameServer()->getSAMPDriver();
 			printf("Send death: %d  %d\n", ((SAMPPlayer *)user)->GetPlayerID(), death_info->killer_id);
-			driver->BroadcastDeath((SAMPPlayer *)user, (SAMPPlayer *)extra, 0);
+			driver->BroadcastDeath((SAMPPlayer *)user, (SAMPPlayer *)driver->findPlayerByID(death_info->killer_id), 0);
 			break;
 		}
 	}

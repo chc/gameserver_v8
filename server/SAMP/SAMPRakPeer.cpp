@@ -428,7 +428,7 @@ void SAMPRakPeer::m_client_death_handler(RakNet::BitStream *stream) {
 	printf("Got death: %d - %d\n", reason, killer_id);
 
 	CHCGameServer *server = (CHCGameServer *)mp_driver->getServer();
-	server->GetScriptInterface()->HandleEvent(CHCGS_PlayerDeath, this, (void *)&info);
+	server->GetScriptInterface()->HandleEvent(CHCGS_PlayerDeath, GetPlayer(), (void *)&info);
 }
 void SAMPRakPeer::m_client_enter_vehicle_handler(RakNet::BitStream *stream) {
 	uint16_t carid;
