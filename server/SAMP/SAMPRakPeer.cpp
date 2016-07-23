@@ -375,6 +375,9 @@ void SAMPRakPeer::process_bitstream(RakNet::BitStream *stream) {
 		case ID_STATS_UPDATE:
 		printf("Stats update - %d\n", BITS_TO_BYTES(stream->GetNumberOfUnreadBits()));
 		break;
+		case ID_DISCONNECTION_NOTIFICATION:
+			m_delete_flag = true;
+		break;
 	}
 }
 
