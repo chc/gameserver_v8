@@ -792,3 +792,9 @@ int SAMPDriver::GetNumConnections(bool include_bots, bool include_not_in_scorebo
 	}
 	return ret;	
 }
+void SAMPDriver::BroadcastDeath(SAMPPlayer *player, SAMPPlayer* killer, uint8_t reason) {
+	RakNet::BitStream bs;
+	bs.Write(player->GetPlayerID());
+	bs.Write(killer->GetPlayerID());
+	SendRPCToStreamed(player, ESAMPRPC_PlayerDeath, &bs, false);
+}

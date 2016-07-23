@@ -1,5 +1,6 @@
 #include "PythonInterface.h"
 #include "CHCGameServer.h"
+#include "SAMP/SAMPPlayer.h"
 #include "SAMP/SAMPRakPeer.h"
 #include <arpa/inet.h>
 #include <Python.h>
@@ -170,6 +171,14 @@ void PythonScriptInterface::HandleEvent(int event_id, void *user, void *extra) {
 				Py_XDECREF(arglist);
 				Py_XDECREF(ret);
 			}
+			break;
+		}
+		case CHCGS_PlayerDeath: {
+			SAMPDeathInfo *death_info;
+			SAMPDriver *driver = this->getGameServer()->getSAMPDriver();
+			printf("Send death: %d  %d\n", ((SAMPPlayer *)user)->GetPlayerID(), death_info->killer_id);
+			driver->BroadcastDeath((SAMPPlayer *)user, (SAMPPlayer *)extra, 0);
+			break;
 		}
 	}
 }

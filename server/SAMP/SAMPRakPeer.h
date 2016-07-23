@@ -205,6 +205,7 @@ private:
 	void m_client_request_spawn(RakNet::BitStream *stream);
 	void m_client_request_class(RakNet::BitStream *stream);
 	void m_client_chat_message_handler(RakNet::BitStream *stream);
+	void m_client_death_handler(RakNet::BitStream *stream);
 	void m_textdraw_clicked_handler(RakNet::BitStream *stream);
 
 	//Misc RPC stuff

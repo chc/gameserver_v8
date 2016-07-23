@@ -34,8 +34,8 @@ enum ESAMPRPC {
 	ESAMPRPC_ClientJoin = 25,
 	ESAMPRPC_EnterVehicle = 26,
 	ESAMPRPC_AddPlayerToWorld = 32,
+	ESAMPRPC_Death = 53,
 	ESAMPRPC_DeletePlayerFromWorld = 163,
-	ESAMPRPC_PlayerDeath = 166,
 	ESAMPRPC_Create3DTextLabel = 36,
 	ESAMPRPC_ClientCommand = 50,
 	ESAMPRPC_ClientSpawned = 52,
@@ -60,6 +60,7 @@ enum ESAMPRPC {
 	ESAMPRPC_ExitVehicle = 154,
 	ESAMPRPC_VehicleCreate = 164,
 	ESAMPRPC_VehicleDelete = 165,
+	ESAMPRPC_PlayerDeath = 166,
 };
 
 
@@ -106,6 +107,12 @@ typedef struct _SAMP3DLabel {
 	int playerid;
 	int vehicleid;
 } SAMP3DLabel;
+
+typedef struct {
+	uint16_t player_id;
+	uint16_t killer_id;
+	uint8_t reason;
+} SAMPDeathInfo;
 
 
 typedef struct {
@@ -275,6 +282,8 @@ public:
 	uint16_t GetFreeTextDrawID();
 
 	int GetNumConnections(bool include_bots = false, bool include_not_in_scoreboard = false);
+
+	void BroadcastDeath(SAMPPlayer *player, SAMPPlayer* killer, uint8_t reason);
 
 private:
 

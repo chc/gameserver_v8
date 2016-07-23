@@ -18,7 +18,8 @@ RPCHandler SAMPRakPeer::s_rpc_handler[] = {
 	{ESAMPRPC_RequestClass, &SAMPRakPeer::m_client_request_class},
 	{ESAMPRPC_RequestSpawn, &SAMPRakPeer::m_client_request_spawn},
 	{ESAMPRPC_ChatMessage, &SAMPRakPeer::m_client_chat_message_handler},
-	{ESAMPRPC_SelectTextDraw, &SAMPRakPeer::m_textdraw_clicked_handler}
+	{ESAMPRPC_SelectTextDraw, &SAMPRakPeer::m_textdraw_clicked_handler},
+	{ESAMPRPC_Death, &SAMPRakPeer::m_client_death_handler}
 };
 
 SAMPRakPeer::SAMPRakPeer(SAMPDriver *driver, struct sockaddr_in *address_info) {
@@ -414,6 +415,20 @@ void SAMPRakPeer::m_textdraw_clicked_handler(RakNet::BitStream *stream) {
 	CHCGameServer *server = (CHCGameServer *)mp_driver->getServer();
 	server->GetScriptInterface()->HandleEvent(CHCGS_UIClick, this, val);
 
+}
+void SAMPRakPeer::m_client_death_handler(RakNet::BitStream *stream) {
+	uint8_t reason;
+	uint16_t killer_id;
+
+	SAMPDeathInfo info;
+
+	stream->Read(info.killer_id);
+	stream->Read(info.reason);
+
+	printf("Got death: %d - %d\n", reason, killer_id);
+
+	CHCGameServer *server = (CHCGameServer *)mp_driver->getServer();
+	server->GetScriptInterface()->HandleEvent(CHCGS_PlayerDeath, this, (void *)&info);
 }
 void SAMPRakPeer::m_client_enter_vehicle_handler(RakNet::BitStream *stream) {
 	uint16_t carid;
