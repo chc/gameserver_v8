@@ -137,6 +137,8 @@ public:
 	void PlayerStreamCheck(SAMPPlayer *car);
 	bool PlayerInStreamRange(SAMPPlayer *car);
 
+	void StreamOutForAll(SAMPPlayer *player);
+
 	void AddToScoreboard(SAMPPlayer *bot);
 	void RemoveFromScoreboard(SAMPPlayer *bot);
 	SAMPPlayer *GetPlayer() { return mp_player; };

@@ -798,3 +798,13 @@ void SAMPDriver::BroadcastDeath(SAMPPlayer *player, SAMPPlayer* killer, uint8_t 
 	bs.Write(killer->GetPlayerID());
 	SendRPCToStreamed(player, ESAMPRPC_PlayerDeath, &bs, false);
 }
+void SAMPDriver::StreamOutForAll(SAMPPlayer *player) {
+	std::vector<SAMPRakPeer *>::iterator it = m_connections.begin();
+	while(it != m_connections.end()) {
+		SAMPRakPeer *peer = *it;
+		if(peer != player->GetSAMPPeer() && peer->IsPlayerStreamed(player)) {
+			peer->StreamOutPlayer(player);
+		}
+		it++;
+	}
+}

@@ -285,6 +285,8 @@ public:
 
 	void BroadcastDeath(SAMPPlayer *player, SAMPPlayer* killer, uint8_t reason);
 
+	void StreamOutForAll(SAMPPlayer *player);
+
 private:
 
 	//samp query stuff

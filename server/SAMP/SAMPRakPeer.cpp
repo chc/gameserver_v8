@@ -145,8 +145,6 @@ void SAMPRakPeer::handle_raknet_packet(char *data, int len) {
 		RakNet::BitStream bs((unsigned char *)&data, BITS_TO_BYTES(data_len), false);
 		process_bitstream(&bs);
 	}
-	if(mp_player)
-		mp_driver->StreamUpdate(this);
 }
 void SAMPRakPeer::process_bitstream(RakNet::BitStream *stream) {
 	RakNet::BitStream os(1024);
@@ -430,6 +428,8 @@ void SAMPRakPeer::m_client_death_handler(RakNet::BitStream *stream) {
 	printf("Got death: %d - %d\n", reason, killer_id);
 
 	mp_player->SetSpawned(false);
+	mp_driver->StreamOutForAll(mp_player);
+
 
 	CHCGameServer *server = (CHCGameServer *)mp_driver->getServer();
 	server->GetScriptInterface()->HandleEvent(CHCGS_PlayerDeath, GetPlayer(), (void *)&info);
@@ -963,6 +963,7 @@ void SAMPRakPeer::PlayerStreamCheck(SAMPPlayer *car) {
 		}
 	}
 }
+
 bool SAMPRakPeer::PlayerInStreamRange(SAMPPlayer *car) {
 	if(!car->GetSpawned() || !GetPlayer()->GetSpawned()) {
 		return false;
