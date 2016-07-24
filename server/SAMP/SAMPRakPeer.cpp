@@ -422,10 +422,12 @@ void SAMPRakPeer::m_client_death_handler(RakNet::BitStream *stream) {
 
 	SAMPDeathInfo info;
 
-	stream->Read(info.killer_id);
 	stream->Read(info.reason);
+	stream->Read(info.killer_id);
 
 	printf("Got death: %d - %d\n", reason, killer_id);
+
+	mp_player->SetSpawned(false);
 
 	CHCGameServer *server = (CHCGameServer *)mp_driver->getServer();
 	server->GetScriptInterface()->HandleEvent(CHCGS_PlayerDeath, GetPlayer(), (void *)&info);
