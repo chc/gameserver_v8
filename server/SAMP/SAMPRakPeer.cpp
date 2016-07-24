@@ -688,7 +688,7 @@ void SAMPRakPeer::think() {
 		m_timeout_flag = true;
 	}
 
-	if(mp_player && mp_player->GetSpawned())
+	if(mp_player)
 		mp_driver->StreamUpdate(this);
 }
 void SAMPRakPeer::send_ping() {
@@ -947,7 +947,7 @@ void SAMPRakPeer::VehicleStreamCheck(SAMPVehicle *car) {
 	}
 }
 void SAMPRakPeer::PlayerStreamCheck(SAMPPlayer *car) {
-	if(!mp_player || !mp_player->GetSpawned() || !car->GetSpawned())
+	if(!mp_player)
 		return;
 	bool is_streamed = IsPlayerStreamed(car);
 	if(!is_streamed) {
@@ -961,6 +961,9 @@ void SAMPRakPeer::PlayerStreamCheck(SAMPPlayer *car) {
 	}
 }
 bool SAMPRakPeer::PlayerInStreamRange(SAMPPlayer *car) {
+	if(!car->GetSpawned() || !GetPlayer()->GetSpawned()) {
+		return false;
+	}
 	float dist[3];
 	float *pos = GetPlayer()->GetPosition();
 	float *other_pos = car->GetPosition();
