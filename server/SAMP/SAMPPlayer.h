@@ -65,9 +65,6 @@ public:
 	void SetSeatFlags(uint8_t flags) {m_seat_flags = flags; };
 	uint8_t GetSeatFlags() { return m_seat_flags; };
 
-	bool IsDead() { return m_dead; };
-	void SetDead(bool val) { m_dead = val; };
-
 private:
 	float m_health;
 	float m_armour;
@@ -87,7 +84,6 @@ private:
 	uint8_t m_name[MAX_SAMP_NAME];
 
 	bool m_spawned;
-	bool m_dead;
 
 	uint8_t m_holding_weapon;
 	uint8_t m_special_action;

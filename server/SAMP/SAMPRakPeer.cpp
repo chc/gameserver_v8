@@ -355,11 +355,7 @@ void SAMPRakPeer::process_bitstream(RakNet::BitStream *stream) {
 			stream->Read(surfinfo);
 			stream->Read(anim);
 
-			if(mp_player && mp_player->GetSpawned()) {
-				//temp fix for death to avoid players being unstreamed
-				if(mp_player->IsDead()) {
-					mp_player->SetDead(false);
-				}
+			if(mp_player) {
 				mp_player->SetPosition((float *)&pos);
 				mp_player->SetQuat((float *)&quat);
 				mp_player->SetHealth((float)health);
