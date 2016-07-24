@@ -428,7 +428,6 @@ void SAMPRakPeer::m_client_death_handler(RakNet::BitStream *stream) {
 	printf("Got death: %d - %d\n", reason, killer_id);
 
 	mp_player->SetSpawned(false);
-	mp_driver->StreamOutForAll(mp_player);
 
 
 	CHCGameServer *server = (CHCGameServer *)mp_driver->getServer();
@@ -546,6 +545,7 @@ void SAMPRakPeer::m_client_dialogresp_handler(RakNet::BitStream *stream) {
 }
 void SAMPRakPeer::m_client_spawned_handler(RakNet::BitStream *stream) {
 	if(mp_player) {
+		mp_driver->StreamOutForAll(mp_player);
 		mp_player->SetSpawned(true);
 	}
 }
