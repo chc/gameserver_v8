@@ -145,6 +145,8 @@ void SAMPRakPeer::handle_raknet_packet(char *data, int len) {
 		RakNet::BitStream bs((unsigned char *)&data, BITS_TO_BYTES(data_len), false);
 		process_bitstream(&bs);
 	}
+	if(mp_player)
+		mp_driver->StreamUpdate(this);
 }
 void SAMPRakPeer::process_bitstream(RakNet::BitStream *stream) {
 	RakNet::BitStream os(1024);
@@ -956,6 +958,7 @@ void SAMPRakPeer::PlayerStreamCheck(SAMPPlayer *car) {
 		}
 	} else {
 		if(!PlayerInStreamRange(car)) {
+			printf("Streaming out\n");
 			StreamOutPlayer(car);
 		}
 	}
