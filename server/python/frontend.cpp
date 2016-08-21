@@ -63,7 +63,8 @@ void samp_frontend_load_td_font(PyObject *font_data, SAMPTextDraw *td) {
 		PyObject* py_alignment = PyDict_GetItemString(font_data, "alignment");
 		
 		PyObject* py_model = PyDict_GetItemString(font_data, "model");
-
+		
+		
 		int alignment = 0;
 		if(py_alignment) {
 			alignment = PyLong_AsLong(py_alignment);
@@ -99,11 +100,10 @@ void samp_frontend_load_td_font(PyObject *font_data, SAMPTextDraw *td) {
 			if(seq) {
 				Py_ssize_t len =  PyList_Size(seq);
 				for(int i=0;i<len;i++) {
-					td->model_colours[i] = PyLong_AsLong(PyList_GET_ITEM(seq, i));
+					td->model_colours[i] = PyLong_AsUnsignedLong(PyList_GET_ITEM(seq, i));
 				}
 			}	
 		}
-
 		PyObject *model_zoom = PyDict_GetItemString(font_data, "model_camera_zoom");
 		if(model_zoom) {
 			td->zoom = PyFloat_AsDouble(model_zoom);
@@ -128,10 +128,10 @@ void samp_frontend_load_td_font(PyObject *font_data, SAMPTextDraw *td) {
 
 
 		if(py_model) {
-			td->model = PyLong_AsLong(py_model);
+			td->model = PyLong_AsUnsignedLong(py_model);
 		}
 		if(py_style) {
-			td->style = PyLong_AsLong(py_style);
+			td->style = PyLong_AsUnsignedLong(py_style);
 		}
 		if(has_Shadow) {
 			td->shadow = true;
@@ -140,7 +140,8 @@ void samp_frontend_load_td_font(PyObject *font_data, SAMPTextDraw *td) {
 			td->flags |= SAMPTD_IsProportional;
 		}
 		if(py_colour) {
-			uint32_t colour = PyLong_AsLong(py_colour);
+			
+			uint32_t colour = PyLong_AsUnsignedLong(py_colour);
 			td->font_colour = colour;
 		}
 		if(py_width && py_height) {
@@ -172,7 +173,7 @@ PyObject *frontend_createuielement(PyObject *self, PyObject* args) {
     	uint32_t box_col = 0;
     	
     	if(py_box_colour) {
-    		 box_col = PyLong_AsLong(py_box_colour);
+    		 box_col = PyLong_AsUnsignedLong(py_box_colour);
     	}
     	if(py_box_width && py_box_height) {
     		float box_width = PyFloat_AsDouble(py_box_width), box_height = PyFloat_AsDouble(py_box_height);

@@ -1,8 +1,8 @@
+#include "main.h"
 #include "PythonInterface.h"
 #include "CHCGameServer.h"
 #include "SAMP/SAMPPlayer.h"
 #include "SAMP/SAMPRakPeer.h"
-#include <arpa/inet.h>
 #include <Python.h>
 #include <structmember.h>
 
@@ -20,6 +20,8 @@ PythonScriptInterface::PythonScriptInterface(CHCGameServer *gameserver) : IScrip
   PyImport_AppendInittab("CoreServer", PyInit_CoreServer);
   PyImport_AppendInittab("Frontend", PyInit_FrontEnd);
   PyImport_AppendInittab("SAMP", PyInit_SAMP);
+
+  Py_SetPythonHome(L"E:\\Code\\Python-3.5.0"); //temp windows fix
 
   Py_Initialize();
   FILE *fd = fopen("scripts/__init__.py", "rb");

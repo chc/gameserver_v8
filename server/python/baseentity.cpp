@@ -288,7 +288,7 @@ int Entity_setname(gs_BaseEntityObject *self, PyObject *value, void *closure) {
 	return 0;
 }
 PyObject *Entity_getname(gs_BaseEntityObject *self, void *closure) {
-
+	Py_RETURN_NONE;
 }
 PyObject *pyi_baseentity_putplayerincar(gs_BaseEntityObject *self, PyObject *args) {
 	int vehid;

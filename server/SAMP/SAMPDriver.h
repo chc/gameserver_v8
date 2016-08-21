@@ -8,7 +8,11 @@
 
 #include <map>
 #include <vector>
+#ifdef _WINDOWS
+#include <time.h>
+#else
 #include <sys/time.h>
+#endif
 
 #include <RakNet/BitStream.h>
 #include <RakNet/DS_RangeList.h>

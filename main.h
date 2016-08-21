@@ -6,6 +6,9 @@
 	typedef int socklen_t;
 	#define snprintf sprintf_s
 	#define strcasecmp _stricmp
+	#define strncasecmp _strnicmp
+
+	int gettimeofday(struct timeval *tp, struct timezone *tzp);
 	#else
 	#include <unistd.h>
 	#include <sys/socket.h>

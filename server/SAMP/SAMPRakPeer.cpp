@@ -6,7 +6,11 @@
 
 #include "SAMPPlayer.h"
 
+#ifdef _WINDOWS
+#include <time.h>
+#else
 #include <sys/time.h>
+#endif
 
 RPCHandler SAMPRakPeer::s_rpc_handler[] = {
 	{ESAMPRPC_ClientJoin, &SAMPRakPeer::m_client_join_handler},
@@ -186,11 +190,11 @@ void SAMPRakPeer::process_bitstream(RakNet::BitStream *stream) {
 		break;
 		case ID_AUTH_KEY:
 			uint8_t auth_len;
-			uint8_t auth[32];
+			uint8_t auth[64];
 			memset(&auth,0,sizeof(auth));
 			stream->Read(auth_len);
 			stream->Read((char *)&auth, auth_len);
-			//printf("Client Auth key: %s\n",auth);
+			printf("Client Auth key: %s [%d]\n",auth, auth_len);
 			send_connection_accepted(true);
 			m_samprak_auth = true;
 		break;
@@ -392,8 +396,11 @@ void SAMPRakPeer::handle_incoming_rpc(RakNet::BitStream *stream) {
 	uint32_t bytes = BITS_TO_BYTES(bits);
 	char rpcdata[1024];
 	
-	stream->ReadBits((unsigned char *)&rpcdata, bits, false);
-	RakNet::BitStream bs((unsigned char *)&rpcdata, bytes, true);
+	RakNet::BitStream bs;
+	if(bits > 0) {
+		stream->ReadBits((unsigned char *)&rpcdata, bits, false);
+		bs.WriteBits((unsigned char *)&rpcdata, bits);
+	}
 
 	for(int i=0;i<sizeof(s_rpc_handler)/sizeof(RPCHandler);i++) {
 		if(s_rpc_handler[i].id == rpcid) {
